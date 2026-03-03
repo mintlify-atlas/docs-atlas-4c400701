@@ -1,0 +1,115 @@
+{
+  "projectType": "saas",
+  "projectName": "Medusa Wallet",
+  "projectDescription": "Open source Lightning Network wallet with no KYC requirements",
+  "theme": "aspen",
+  "primaryColor": "#F7931A",
+  "lightColor": "#FFA940",
+  "darkColor": "#D16F00",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/wallets",
+              "features/payments",
+              "features/swaps",
+              "features/security"
+            ]
+          },
+          {
+            "group": "User Guide",
+            "pages": [
+              "guide/setup-account",
+              "guide/create-wallet",
+              "guide/send-receive",
+              "guide/lightning-address",
+              "guide/swap-bitcoin"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "advanced/lnbits-integration",
+              "advanced/authentication",
+              "advanced/fiat-conversion"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Development",
+        "groups": [
+          {
+            "group": "Developer Guide",
+            "pages": [
+              "development/setup",
+              "development/architecture",
+              "development/building"
+            ]
+          },
+          {
+            "group": "API Reference",
+            "pages": [
+              "api/overview",
+              "api/lnbits",
+              "api/medusa",
+              "api/swaps"
+            ]
+          },
+          {
+            "group": "Components",
+            "pages": [
+              "components/overview",
+              "components/wallet-components",
+              "components/payment-components"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "No KYC Lightning wallet",
+    "Multi-wallet management",
+    "Lightning Network payments (BOLT11, LNURL)",
+    "Bitcoin swaps via Boltz",
+    "Biometric and PIN authentication",
+    "Real-time fiat conversion",
+    "QR code payment scanning",
+    "Lightning address support",
+    "Auto-swap functionality",
+    "Multi-currency support"
+  ],
+  "publicApiSurface": [
+    "lnbits.register(username, email, password)",
+    "lnbits.login(username, password)",
+    "lnbits.createWallet(name, adminkey)",
+    "lnbits.createInvoice(amount, inkey, memo)",
+    "lnbits.pay(payData, adminkey)",
+    "lnbits.getPayments(inkey)",
+    "lnbits.createSwap(data, adminkey)",
+    "lnbits.createAutoSwap(data, adminkey)",
+    "medusa.getBitcoinPricesAt(timestamp)",
+    "useWalletsStore",
+    "useAuthStore",
+    "useSettingsStore",
+    "useAppAuthentication()",
+    "useBiometric()",
+    "useCreateInvoice()",
+    "usePay()",
+    "useCreateSwap()",
+    "useAutoSwaps()"
+  ]
+}
