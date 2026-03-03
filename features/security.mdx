@@ -1,0 +1,390 @@
+---
+title: 'Security Features'
+description: 'Protect your wallet with biometric authentication, PIN codes, and secure encrypted storage'
+---
+
+## Overview
+
+Medusa Wallet employs multiple layers of security to protect your Bitcoin funds and sensitive data. From device-level biometric authentication to encrypted storage and automatic locking, Medusa ensures your wallet remains secure while maintaining ease of use.
+
+<Warning>
+  Your security is only as strong as your device security. Always use device lock screens and keep your device updated.
+</Warning>
+
+## Authentication Methods
+
+Medusa offers two complementary authentication methods:
+
+<CardGroup cols={2}>
+  <Card title="PIN Code" icon="key">
+    4-digit PIN for quick and secure wallet access
+  </Card>
+  <Card title="Biometric" icon="fingerprint">
+    Face ID or Touch ID for seamless authentication
+  </Card>
+</CardGroup>
+
+## PIN Code Security
+
+### Setting Up PIN
+
+Protect your wallet with a 4-digit PIN:
+
+1. Navigate to Settings → Security
+2. Enable "PIN Protection"
+3. Enter your desired 4-digit PIN
+4. Confirm by entering it again
+5. PIN is now active
+
+<Info>
+  PIN must be enabled before you can use biometric authentication.
+</Info>
+
+### PIN Requirements
+
+- **Length**: Exactly 4 digits
+- **Unique**: Choose numbers not easily guessable
+- **Secure Storage**: PIN is hashed and stored using secure encryption
+- **Required for**: App access, sensitive operations, settings changes
+
+### PIN Retries
+
+Failed PIN attempts are limited:
+
+- **Maximum Attempts**: 5 incorrect tries
+- **After 5 Failures**: Automatic logout and data clearing
+- **Counter Reset**: Successful PIN entry resets retry counter
+
+<Warning>
+  After 5 failed PIN attempts, you will be logged out and must log back in with your account credentials.
+</Warning>
+
+### When PIN is Required
+
+Your PIN is requested:
+
+- When opening the app after inactivity
+- When accessing sensitive settings
+- When the app has been in background for more than 5 minutes
+- On cold start if PIN protection is enabled
+
+## Biometric Authentication
+
+### Supported Biometric Types
+
+Medusa supports device-native biometric authentication:
+
+- **Face ID**: On supported iOS devices
+- **Touch ID**: On iPhone and iPad with Touch ID
+- **Face Unlock**: On supported Android devices
+- **Fingerprint**: On Android devices with fingerprint sensors
+
+### Enabling Biometric Authentication
+
+Prerequisites:
+1. PIN protection must be enabled first
+2. Device must have biometric hardware
+3. Biometric authentication must be enrolled on your device
+4. Enrollment level must meet security requirements
+
+**Setup Process:**
+1. Ensure PIN is already set up
+2. Navigate to Settings → Security
+3. Enable "Biometric Authentication"
+4. Authenticate with your biometric to confirm
+5. Biometric access is now active
+
+### How Biometric Works
+
+When biometric authentication is enabled:
+
+- **Priority**: Biometric is attempted first before PIN
+- **Fallback**: If biometric fails, PIN entry is required
+- **Device Security**: Uses your device's Secure Enclave/TEE
+- **No Storage**: No biometric data is stored by Medusa
+
+### Biometric Enrollment Level
+
+Medusa requires a minimum enrollment level for security:
+
+- **Required Level**: 2 (strong biometric enrollment)
+- **Checks**: Hardware presence, enrollment status, security level
+- **Validation**: Performed each time app becomes active
+
+<Note>
+  If your device biometric enrollment doesn't meet requirements, PIN entry will be required instead.
+</Note>
+
+### Biometric Authentication Flow
+
+1. App becomes active after background time
+2. Medusa checks if biometric is available and properly enrolled
+3. If yes: Biometric prompt is shown
+4. On success: App unlocks immediately
+5. On failure: User is redirected to PIN entry screen
+
+## App Locking Behavior
+
+### Automatic Locking
+
+Medusa automatically locks when:
+
+- App enters background and remains inactive
+- Lock time threshold is exceeded
+- Device screen is locked
+- User manually triggers lock
+
+### Lock Time Configuration
+
+**Default Lock Time**: 5 minutes of inactivity
+
+After this period, authentication is required to access your wallet.
+
+### Grace Period
+
+Short Background Time:
+- **Grace Period**: 30 seconds
+- **Behavior**: If you return within 30 seconds, no authentication required
+- **Applicable to**: Camera, Send, and Receive screens
+- **Purpose**: Smooth UX when quickly switching apps
+
+<Info>
+  The grace period prevents annoying auth prompts when briefly leaving the app to copy an address or check a message.
+</Info>
+
+## Privacy Overlay
+
+### Screen Privacy
+
+When the app goes to background or becomes inactive:
+
+- **Privacy Screen**: Automatic overlay obscures content
+- **App Switcher**: Prevents sensitive info from appearing in app previews
+- **Platform-specific**: Works on both iOS and Android
+- **Instant**: Activates immediately when app loses focus
+
+### Protection Against
+
+- Shoulder surfing
+- Screenshot previews in app switcher
+- Accidental exposure when switching apps
+- Screen recording of sensitive content
+
+## Secure Storage
+
+### MMKV Encrypted Storage
+
+Medusa uses MMKV for high-performance encrypted storage:
+
+**Stored Securely:**
+- Wallet credentials (admin keys, invoice keys)
+- PIN hash (not the PIN itself)
+- User preferences and settings
+- Transaction cache
+- Wallet metadata
+
+**Security Features:**
+- **Encryption**: Military-grade AES encryption
+- **Device-bound**: Data encrypted using device hardware keys
+- **Persistent**: Survives app restarts
+- **Efficient**: Fast read/write operations
+
+<Note>
+  MMKV storage is encrypted at rest and only accessible by Medusa on your device.
+</Note>
+
+### What's NOT Stored Locally
+
+- Account password (only stored server-side, hashed)
+- Unencrypted sensitive data
+- Payment history beyond cache (fetched from server)
+- Biometric data (handled entirely by device OS)
+
+## Authentication State Management
+
+### Auth State Tracking
+
+Medusa tracks authentication state:
+
+- **Logged Out**: No user credentials, no authentication required
+- **Logged In, Locked**: User credentials present, auth required
+- **Logged In, Unlocked**: User authenticated, full access granted
+
+### State Transitions
+
+```
+Logged Out → (Login) → Unlocked
+Unlocked → (Background > Lock Time) → Locked
+Locked → (Successful Auth) → Unlocked
+Locked → (5 Failed PINs) → Logged Out
+```
+
+### Auth Triggering
+
+Authentication is triggered when:
+
+1. App state changes from background to active
+2. Elapsed background time exceeds lock time
+3. Auth flag is manually set (e.g., settings change)
+4. Cold start with existing session
+
+## Session Management
+
+### Login Sessions
+
+When you log in:
+
+- **Access Token**: Received from LNbits server
+- **Secure Storage**: Token stored encrypted in MMKV
+- **Session Duration**: Token remains valid until logout
+- **Cookie-based**: Uses `cookie_access_token` for API requests
+
+### Logout Process
+
+Logging out:
+
+1. Clears all local wallet data
+2. Removes access tokens
+3. Resets authentication state
+4. Clears transaction cache
+5. Removes all stored credentials
+
+<Warning>
+  Logging out is permanent. Ensure you can log back in with your username and password before logging out.
+</Warning>
+
+## Best Security Practices
+
+### Strong PIN Selection
+
+✅ **Do:**
+- Choose a unique 4-digit PIN
+- Avoid obvious patterns (1234, 0000)
+- Use numbers not related to birthdays or addresses
+- Remember your PIN (write it down securely if needed)
+
+❌ **Don't:**
+- Use default or simple PINs
+- Share your PIN with others
+- Use the same PIN as other apps
+- Let others see you entering your PIN
+
+### Biometric Best Practices
+
+✅ **Do:**
+- Keep device biometric enrollment updated
+- Use strong device passcode as backup
+- Enable biometric if available (convenience + security)
+- Re-enroll if device prompts
+
+❌ **Don't:**
+- Share device access with untrusted people
+- Disable device biometric security
+- Ignore biometric enrollment warnings
+
+### General Security
+
+✅ **Do:**
+- Keep your device OS updated
+- Use device encryption
+- Enable device lock screen
+- Install apps only from official stores
+- Back up wallet credentials securely
+- Monitor wallet activity regularly
+
+❌ **Don't:**
+- Jailbreak or root your device
+- Install from untrusted sources
+- Share your device with untrusted users
+- Ignore security warnings
+- Store large amounts without additional backup
+
+## Recovery Options
+
+### Forgot PIN
+
+If you forget your PIN:
+
+1. After 5 failed attempts, you'll be logged out
+2. Log back in using your username and password
+3. Set a new PIN after logging in
+4. All previous wallet data remains intact (server-synced)
+
+### Lost Device Access
+
+If you lose your device:
+
+1. Log in on a new device using your credentials
+2. Your wallets and funds are accessible (custodial)
+3. Set up new PIN and biometric on new device
+4. Previous device sessions remain active until manual logout
+
+<Info>
+  Since Medusa is a custodial wallet, your funds are recoverable with your login credentials even if you lose your device.
+</Info>
+
+### Account Credentials
+
+Always remember:
+- **Username**: Required for login
+- **Password**: Required for login
+- **Email**: Used for account recovery (if supported)
+
+Without these, you cannot access your account or funds.
+
+## Platform-Specific Security
+
+### iOS Security Features
+
+- **Secure Enclave**: Biometric data never leaves secure hardware
+- **Keychain**: Additional secure storage option
+- **App Transport Security**: Enforced HTTPS
+- **Background Task Limits**: Automatic app suspension
+
+### Android Security Features
+
+- **Trusted Execution Environment (TEE)**: Hardware-backed security
+- **BiometricPrompt API**: Standard biometric authentication
+- **Scoped Storage**: App data isolation
+- **Play Integrity API**: App integrity verification
+
+## Technical Implementation
+
+### Authentication Flow
+
+1. **App State Monitoring**: `AppState` listener tracks active/background states
+2. **Timestamp Tracking**: Background timestamp recorded when app backgrounds
+3. **Elapsed Time Check**: On active, elapsed time calculated
+4. **Auth Decision**: If > lock time and PIN enabled, trigger auth
+5. **Biometric First**: If biometric enabled and available, try biometric
+6. **PIN Fallback**: If biometric unavailable or fails, require PIN
+7. **Success**: Auth cleared, app unlocked
+8. **Failure**: Retry counter incremented, logout after 5 failures
+
+### Security Constants
+
+```typescript
+PIN_SIZE = 4 digits
+PIN_RETRIES = 5 attempts
+LOCK_TIME = 5 minutes (300,000 ms)
+ALLOWED_ENROLLED_LEVEL = 2 (strong biometric)
+GRACE_PERIOD_TIME = 30 seconds (30,000 ms)
+```
+
+### Secure Storage Keys
+
+- `medusa_pin`: Hashed PIN storage key
+- `medusa-wallets`: Wallet data storage namespace
+- `last_background_timestamp`: For lock time calculation
+- Store names: Persistent across app restarts
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Wallet Management" icon="wallet" href="/features/wallets">
+    Learn about managing your wallets securely
+  </Card>
+  <Card title="Payment Features" icon="bolt" href="/features/payments">
+    Understand secure payment workflows
+  </Card>
+</CardGroup>

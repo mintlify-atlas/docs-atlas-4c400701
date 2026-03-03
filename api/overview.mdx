@@ -1,0 +1,117 @@
+---
+title: API Reference Overview
+description: Overview of Medusa Wallet API modules and integration guide
+---
+
+Medusa Wallet provides a comprehensive set of API functions for building Lightning Network applications. The API is organized into three main modules:
+
+## API Modules
+
+<CardGroup cols={3}>
+  <Card title="LNbits API" icon="bolt" href="/api/lnbits">
+    Authentication, wallet management, payments, and invoices
+  </Card>
+  <Card title="Medusa Pricing API" icon="chart-line" href="/api/medusa">
+    Historical Bitcoin price data and fiat conversions
+  </Card>
+  <Card title="Boltz Swap API" icon="arrow-right-arrow-left" href="/api/swaps">
+    Lightning to on-chain swaps via Boltz
+  </Card>
+</CardGroup>
+
+## Getting Started
+
+The Medusa Wallet API is built on top of LNbits and provides additional functionality for pricing and swaps. All API functions are available through the imported modules:
+
+```typescript
+import lnbits from '@/api/lnbits'
+import medusa from '@/api/medusa'
+```
+
+## Base URL
+
+The default base URL for the LNbits API is:
+
+```
+https://wallet.medusa.bz
+```
+
+You can configure a custom LNbits URL using the settings store:
+
+```typescript
+import { useSettingsStore } from '@/store/settings'
+
+const lnbitsUrl = useSettingsStore.getState().lnbitsUrl
+```
+
+## Authentication
+
+Most API endpoints require authentication using one of three key types:
+
+<ParamField path="accessToken" type="string">
+  User session token obtained from `register()` or `login()`
+</ParamField>
+
+<ParamField path="adminkey" type="string">
+  Wallet admin key for privileged operations (payments, wallet management)
+</ParamField>
+
+<ParamField path="inkey" type="string">
+  Wallet invoice key for read operations (viewing payments, creating invoices)
+</ParamField>
+
+## React Hooks
+
+Medusa Wallet provides React Query hooks for all API functions:
+
+### Query Hooks
+
+- `useUser(accessToken)` - Fetch user data and wallets
+- `usePayments(inkeys, enabled)` - Fetch payment history
+- `usePaginatedPayments(...)` - Fetch paginated payments
+- `useSwaps(adminkey)` - Fetch swap history
+- `useAutoSwaps(adminkey)` - Fetch auto-swap configurations
+- `usePaylinks(inkey)` - Fetch LNURL paylinks
+
+### Mutation Hooks
+
+- `useCreateInvoice(inkey, amount, memo)` - Create Lightning invoice
+- `usePay(adminkey)` - Pay Lightning invoice or LNURL
+- `useCreateSwap(adminkey)` - Create Boltz swap
+- `useCreateAutoSwap(adminkey)` - Create auto-swap configuration
+- `useDeleteAutoSwap(adminkey)` - Delete auto-swap
+
+## Error Handling
+
+All API functions throw errors with descriptive messages. Use try/catch blocks or React Query's error handling:
+
+```typescript
+try {
+  const user = await lnbits.getUser(accessToken)
+} catch (error) {
+  console.error(error.message)
+}
+```
+
+## TypeScript Support
+
+All API functions are fully typed with TypeScript. Import types from the API modules:
+
+```typescript
+import type { PayData, CreateSwapData, CreateAutoSwapData } from '@/api/lnbits'
+import type { FiatSnapshot } from '@/types/fiat'
+```
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="LNbits API" icon="bolt" href="/api/lnbits">
+    Explore authentication and payment functions
+  </Card>
+  <Card title="Medusa Pricing API" icon="chart-line" href="/api/medusa">
+    Learn about historical price lookups
+  </Card>
+  <Card title="Boltz Swap API" icon="arrow-right-arrow-left" href="/api/swaps">
+    Integrate Lightning swaps
+  </Card>
+</CardGroup>

@@ -1,0 +1,150 @@
+---
+title: 'Multi-Wallet Management'
+description: 'Manage multiple Lightning wallets with ease, track balances, and organize your Bitcoin funds'
+---
+
+## Overview
+
+Medusa Wallet allows you to create and manage multiple Lightning Network wallets within a single app. Each wallet operates independently with its own balance, transaction history, and credentials, giving you complete control over your Bitcoin funds.
+
+<Info>
+  All wallets are custodial Lightning wallets powered by LNbits, providing instant payments and low fees.
+</Info>
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Multiple Wallets" icon="wallet">
+    Create unlimited wallets to organize your funds by purpose, project, or spending category
+  </Card>
+  <Card title="Custom Names & Colors" icon="palette">
+    Personalize each wallet with custom names and gradient color themes for easy identification
+  </Card>
+  <Card title="Real-time Balances" icon="chart-line">
+    View individual wallet balances and total portfolio value in both satoshis and your preferred fiat currency
+  </Card>
+  <Card title="Transaction History" icon="clock-rotate-left">
+    Access complete transaction history for each wallet with timestamps and descriptions
+  </Card>
+</CardGroup>
+
+## Creating a New Wallet
+
+Adding a new wallet to your Medusa account is straightforward:
+
+1. From the main screen, tap the "New Wallet" button
+2. Enter a descriptive name for your wallet (e.g., "Savings", "Daily Spending", "Project Funds")
+3. Choose a color gradient to visually distinguish this wallet
+4. Tap "Create" to complete the process
+
+Your new wallet is created instantly and ready to receive Lightning payments.
+
+<Note>
+  Each wallet has unique credentials (admin key and invoice key) that are securely stored on your device.
+</Note>
+
+## Wallet Card Display
+
+Each wallet is represented by a colorful card showing:
+
+- **Wallet Name**: Your custom wallet name
+- **Balance**: Current balance in your preferred Bitcoin unit (BTC, sats, or mBTC)
+- **Fiat Value**: Equivalent value in your selected fiat currency (USD, EUR, etc.)
+- **Latest Transaction**: Time since the most recent transaction
+- **Visual Theme**: Your chosen gradient color scheme
+
+## Managing Wallets
+
+### Selecting a Wallet
+
+Tap any wallet card to view its details, transaction history, and perform actions like sending or receiving payments.
+
+### Renaming a Wallet
+
+1. Select the wallet you want to rename
+2. Tap the settings or edit icon
+3. Enter the new name
+4. Confirm the change
+
+The wallet name is updated across all views immediately.
+
+### Changing Wallet Color
+
+Customize your wallet's appearance:
+
+1. Open the wallet settings
+2. Select "Change Color"
+3. Choose from the available gradient color options
+4. The new color is applied instantly
+
+### Deleting a Wallet
+
+<Warning>
+  Deleting a wallet is permanent. Ensure you have withdrawn all funds and backed up any important transaction records before deletion.
+</Warning>
+
+To delete a wallet:
+
+1. Navigate to the wallet's settings
+2. Scroll to find the "Delete Wallet" option
+3. Confirm the deletion
+4. The wallet and its transaction history are removed
+
+## Total Balance View
+
+Medusa automatically calculates and displays your total balance across all wallets:
+
+- **Aggregate Balance**: Sum of all wallet balances in satoshis
+- **Total Fiat Value**: Combined value in your selected fiat currency
+- **Real-time Updates**: Balance updates automatically when transactions are confirmed
+
+## Wallet Credentials
+
+Each wallet has two types of keys:
+
+- **Admin Key**: Full control over the wallet, including sending payments and wallet management
+- **Invoice Key (Inkey)**: Read-only access for creating invoices and viewing transactions
+
+<Info>
+  Keys are stored securely in encrypted device storage and never transmitted without user action.
+</Info>
+
+## Best Practices
+
+### Organize by Purpose
+
+Create separate wallets for different use cases:
+- A "Daily Spending" wallet for regular transactions
+- A "Savings" wallet for long-term holdings
+- Project-specific wallets for business or collaborative purposes
+
+### Use Descriptive Names
+
+Choose clear, meaningful names that help you quickly identify each wallet's purpose.
+
+### Regular Backups
+
+While Medusa securely stores your wallet credentials, consider:
+- Keeping records of important transaction details
+- Noting down wallet admin keys in a secure location for recovery
+- Regularly reviewing your wallet list and removing unused wallets
+
+## Technical Details
+
+Wallets in Medusa are implemented using:
+
+- **LNbits Backend**: Industry-standard Lightning wallet infrastructure
+- **Zustand State Management**: Efficient local state handling with persistence
+- **MMKV Storage**: High-performance encrypted key-value storage for wallet data
+- **Real-time Synchronization**: WebSocket connections for instant balance and payment updates
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Make Payments" icon="paper-plane" href="/features/payments">
+    Learn how to send and receive Lightning payments
+  </Card>
+  <Card title="Swap to Bitcoin" icon="repeat" href="/features/swaps">
+    Convert Lightning funds to on-chain Bitcoin
+  </Card>
+</CardGroup>

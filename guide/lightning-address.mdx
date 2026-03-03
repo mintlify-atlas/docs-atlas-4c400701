@@ -1,0 +1,247 @@
+---
+title: Using Lightning Addresses
+description: Learn how to use your Lightning address for simple, memorable payments
+---
+
+## What is a Lightning Address?
+
+A Lightning address is a simple, email-like identifier that makes receiving Bitcoin as easy as sharing your email address. Instead of generating new invoices for each payment, you can share one permanent address.
+
+<Note>
+  Your Lightning address format: `username@wallet.medusa.bz`
+  
+  Example: If your username is "alice", your Lightning address is `alice@wallet.medusa.bz`
+</Note>
+
+## Benefits of Lightning Addresses
+
+- **Easy to Remember**: Like an email address, much simpler than long invoice strings
+- **Reusable**: One address for all incoming payments
+- **Flexible Amounts**: Senders can specify any amount within your limits
+- **Always Active**: No expiration like traditional invoices
+- **Professional**: Clean, shareable format for business use
+
+## Your Lightning Address
+
+When you create a Medusa Wallet account, a Lightning address (called a "paylink") is automatically created for your default wallet.
+
+### Address Details
+
+- **Format**: `[username]@wallet.medusa.bz`
+- **Linked to**: Your default wallet
+- **Minimum**: 1 sat
+- **Maximum**: 10,000,000 sats (10M sats)
+- **Comments**: Supports messages up to 250 characters
+
+## How to Share Your Lightning Address
+
+<Steps>
+  <Step title="Find Your Address">
+    Navigate to the Receive screen. If you're using your default wallet without specifying an amount, your Lightning address will be displayed.
+  </Step>
+
+  <Step title="Copy or Share">
+    Your Lightning address can be:
+    - **Copied to clipboard**: Tap the copy button
+    - **Shown as QR code**: Display the QR code for scanning
+    - **Shared verbally**: It's short enough to read aloud
+  </Step>
+
+  <Step title="Add to Profiles">
+    Use your Lightning address on:
+    - Social media profiles
+    - Email signatures
+    - Business cards
+    - Websites and blogs
+  </Step>
+</Steps>
+
+## Receiving with Lightning Address
+
+When someone pays your Lightning address:
+
+1. **They enter your address** in their Lightning wallet
+2. **They specify the amount** (within your min/max limits)
+3. **They optionally add a comment** (up to 250 characters)
+4. **Payment is instant** to your default wallet
+5. **You receive notification** with amount and any comment
+
+<Tip>
+  All payments to your Lightning address go to your **default wallet**. If you want payments to go to a different wallet, receive them using a specific invoice for that wallet.
+</Tip>
+
+## Using Your Lightning Address
+
+### For Personal Use
+
+```
+Share on social media:
+"Send me sats: alice@wallet.medusa.bz ⚡"
+
+Add to email signature:
+---
+Alice Johnson
+Lightning Address: alice@wallet.medusa.bz
+```
+
+### For Business
+
+```
+On your website:
+"Accept Lightning payments at: business@wallet.medusa.bz"
+
+On invoices:
+Lightning Payment: business@wallet.medusa.bz
+(1,000 - 10,000,000 sats)
+```
+
+### For Content Creators
+
+```
+In video descriptions:
+"Support this content: creator@wallet.medusa.bz ⚡"
+
+On livestreams:
+"Tips welcome: creator@wallet.medusa.bz"
+```
+
+## Understanding Paylinks
+
+Behind your Lightning address is a "paylink" - a Lightning LNURL pay endpoint that makes Lightning addresses work.
+
+### Paylink Configuration
+
+- **Description**: "Medusa default PayLink"
+- **Min sendable**: 1 sat
+- **Max sendable**: 10,000,000 sats
+- **Comment chars**: 250
+- **Always active**: No expiration
+
+### Technical Details
+
+Your Lightning address resolves to:
+- An LNURL pay code
+- Metadata including your identifier
+- Dynamic invoice generation
+- Webhook for payment notifications
+
+<Note>
+  The paylink is created automatically during account registration and is tied to your default wallet's admin key.
+</Note>
+
+## Comparing Payment Methods
+
+| Feature | Lightning Address | Bolt11 Invoice | On-chain Address |
+|---------|------------------|----------------|------------------|
+| **Reusable** | ✅ Yes | ❌ No | ✅ Yes |
+| **Fixed Amount** | ❌ No | ✅ Yes | ❌ No |
+| **Expiration** | ✅ Never | ⚠️ ~10 min | ✅ Never |
+| **Speed** | ⚡ Instant | ⚡ Instant | 🐌 ~10 min |
+| **Fees** | 💰 Very low | 💰 Very low | 💰💰 Higher |
+| **Memorable** | ✅ Yes | ❌ No | ❌ No |
+
+## Advanced Usage
+
+### Requesting Payments
+
+You can structure payment requests:
+
+```
+Please send 10,000 sats to:
+alice@wallet.medusa.bz
+
+With comment: "Invoice #1234"
+```
+
+### Payment Verification
+
+To verify a payment was received:
+1. Check your default wallet balance
+2. Review transaction history
+3. Look for the comment/description
+4. Match the amount and timestamp
+
+### Multiple Addresses
+
+<Note>
+  Currently, Medusa Wallet provides one Lightning address per account, linked to your default wallet. To organize payments:
+  - Use comments to categorize incoming payments
+  - Create specific invoices for specific wallets
+  - Consider the [swap feature](/guide/swap-bitcoin) to move funds between wallets
+</Note>
+
+## Best Practices
+
+<Tip>
+  **Sharing Your Address**:
+  - Use consistent formatting: `username@wallet.medusa.bz`
+  - Include the ⚡ emoji to indicate Lightning support
+  - Specify any amount limits if relevant ("1-1,000,000 sats")
+  - Add context about what payments are for
+</Tip>
+
+<Tip>
+  **Security**:
+  - Your Lightning address is public - that's okay!
+  - Never share your wallet keys or password
+  - Monitor incoming payments regularly
+  - Use descriptive comments to track income sources
+</Tip>
+
+<Tip>
+  **Professional Use**:
+  - Choose a professional username when creating your account
+  - Keep your Lightning address consistent across platforms
+  - Respond promptly to payments with comments
+  - Consider creating a separate account for business if needed
+</Tip>
+
+## Troubleshooting
+
+### Payments Not Arriving
+
+- **Check Default Wallet**: Ensure you're viewing your default wallet
+- **Amount Limits**: Verify payment is between 1 and 10M sats
+- **Network Issues**: Sender may need to retry
+- **Wrong Address**: Confirm sender used correct address
+
+### Address Not Working
+
+- **Typos**: Verify exact username spelling
+- **Domain**: Must be `@wallet.medusa.bz`
+- **Sender Wallet**: Some older wallets don't support Lightning addresses
+- **Fallback**: Generate a traditional invoice instead
+
+### Comments Not Showing
+
+- **Check Transaction**: Comment appears in transaction details
+- **Character Limit**: Comments over 250 chars may be truncated
+- **Sender Support**: Verify sender's wallet supports comments
+
+## Integration Examples
+
+### Social Media Bio
+
+```
+⚡ Bitcoin Lightning: alice@wallet.medusa.bz
+```
+
+### Website Payment Button
+
+```
+💰 Support This Site
+Lightning: tips@wallet.medusa.bz
+```
+
+### Email Footer
+
+```
+---
+Prefer Lightning? alice@wallet.medusa.bz ⚡
+```
+
+## Next Steps
+
+- [Learn how to send and receive payments](/guide/send-receive)
+- [Create additional wallets](/guide/create-wallet) for organization
+- [Swap between on-chain and Lightning](/guide/swap-bitcoin)

@@ -1,0 +1,289 @@
+---
+title: Medusa Pricing API
+description: Historical Bitcoin price data and fiat currency conversions
+---
+
+The Medusa Pricing API provides access to historical Bitcoin price data across multiple fiat currencies. This is essential for calculating the fiat value of Bitcoin transactions at the time they occurred.
+
+## Import
+
+```typescript
+import medusa from '@/api/medusa'
+```
+
+## Configuration
+
+The Medusa API uses the following base URL and credentials:
+
+```typescript
+const BASE_URL = 'https://api.medusa.bz'
+const API_URL = `${BASE_URL}/v1`
+```
+
+Authentication is handled automatically with Basic Auth credentials embedded in the API client.
+
+## Functions
+
+### getBitcoinPricesAt
+
+Retrieve Bitcoin prices in all supported fiat currencies at a specific timestamp.
+
+```typescript
+const prices = await medusa.getBitcoinPricesAt(timestamp)
+```
+
+<ParamField path="timestamp" type="number" required>
+  Unix timestamp in milliseconds
+</ParamField>
+
+<ResponseField name="prices" type="FiatSnapshot">
+  Object containing Bitcoin prices in multiple fiat currencies
+  <Expandable title="supported currencies">
+    <ResponseField name="USD" type="number">
+      Price in US Dollars
+    </ResponseField>
+    <ResponseField name="EUR" type="number">
+      Price in Euros
+    </ResponseField>
+    <ResponseField name="GBP" type="number">
+      Price in British Pounds
+    </ResponseField>
+    <ResponseField name="JPY" type="number">
+      Price in Japanese Yen
+    </ResponseField>
+    <ResponseField name="AUD" type="number">
+      Price in Australian Dollars
+    </ResponseField>
+    <ResponseField name="CAD" type="number">
+      Price in Canadian Dollars
+    </ResponseField>
+    <ResponseField name="CHF" type="number">
+      Price in Swiss Francs
+    </ResponseField>
+    <ResponseField name="CNY" type="number">
+      Price in Chinese Yuan
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<Tabs>
+  <Tab title="Usage">
+    ```typescript
+    import medusa from '@/api/medusa'
+
+    // Get Bitcoin prices from January 1, 2024
+    const timestamp = new Date('2024-01-01').getTime()
+    const prices = await medusa.getBitcoinPricesAt(timestamp)
+
+    console.log(`BTC price on Jan 1, 2024:`)
+    console.log(`  USD: $${prices.USD}`)
+    console.log(`  EUR: €${prices.EUR}`)
+    console.log(`  GBP: £${prices.GBP}`)
+    ```
+  </Tab>
+  <Tab title="Response Example">
+    ```json
+    {
+      "USD": 44156.78,
+      "EUR": 39842.31,
+      "GBP": 34521.45,
+      "JPY": 6234567.89,
+      "AUD": 65432.10,
+      "CAD": 58765.43,
+      "CHF": 37654.32,
+      "CNY": 312345.67
+    }
+    ```
+  </Tab>
+  <Tab title="With Payment">
+    ```typescript
+    // Get historical price for a payment
+    const payment = {
+      timestamp: new Date('2024-01-15').getTime(),
+      sats: 10000
+    }
+
+    const prices = await medusa.getBitcoinPricesAt(payment.timestamp)
+    const SATOSHIS_IN_BITCOIN = 100_000_000
+
+    const btcAmount = payment.sats / SATOSHIS_IN_BITCOIN
+    const usdValue = btcAmount * prices.USD
+
+    console.log(`10,000 sats = $${usdValue.toFixed(2)}`)
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+### getPricesAt
+
+Calculate the fiat value of a specific satoshi amount at a historical timestamp.
+
+```typescript
+const fiatValues = await medusa.getPricesAt(sats, timestamp)
+```
+
+<ParamField path="sats" type="number" required>
+  Amount in satoshis to convert
+</ParamField>
+
+<ParamField path="timestamp" type="number" required>
+  Unix timestamp in milliseconds
+</ParamField>
+
+<ResponseField name="fiatValues" type="FiatSnapshot">
+  Object containing the satoshi amount converted to multiple fiat currencies at the historical rate
+</ResponseField>
+
+<Tabs>
+  <Tab title="Usage">
+    ```typescript
+    import medusa from '@/api/medusa'
+
+    // Convert 50,000 sats to fiat at a specific date
+    const sats = 50000
+    const timestamp = new Date('2024-01-01').getTime()
+    const fiatValues = await medusa.getPricesAt(sats, timestamp)
+
+    console.log(`50,000 sats on Jan 1, 2024:`)
+    console.log(`  USD: $${fiatValues.USD}`)
+    console.log(`  EUR: €${fiatValues.EUR}`)
+    console.log(`  GBP: £${fiatValues.GBP}`)
+    ```
+  </Tab>
+  <Tab title="Response Example">
+    ```json
+    {
+      "USD": 22.08,
+      "EUR": 19.92,
+      "GBP": 17.26,
+      "JPY": 3117.28,
+      "AUD": 32.72,
+      "CAD": 29.38,
+      "CHF": 18.83,
+      "CNY": 156.17
+    }
+    ```
+  </Tab>
+  <Tab title="Transaction History">
+    ```typescript
+    // Calculate fiat values for transaction history
+    const transactions = [
+      { id: '1', sats: 10000, timestamp: 1704067200000 },
+      { id: '2', sats: 25000, timestamp: 1704153600000 },
+      { id: '3', sats: 50000, timestamp: 1704240000000 }
+    ]
+
+    const enrichedTransactions = await Promise.all(
+      transactions.map(async (tx) => {
+        const fiatValues = await medusa.getPricesAt(tx.sats, tx.timestamp)
+        return {
+          ...tx,
+          fiatValues
+        }
+      })
+    )
+
+    enrichedTransactions.forEach((tx) => {
+      console.log(`Transaction ${tx.id}:`)
+      console.log(`  ${tx.sats} sats = $${tx.fiatValues.USD}`)
+    })
+    ```
+  </Tab>
+</Tabs>
+
+## Use Cases
+
+### Payment History with Fiat Values
+
+The Medusa API is used throughout Medusa Wallet to display historical fiat values for Lightning payments:
+
+```typescript
+import lnbits from '@/api/lnbits'
+import medusa from '@/api/medusa'
+import { SATOSHIS_IN_BITCOIN } from '@/constants/btc'
+
+// Fetch payments
+const payments = await lnbits.getPayments(inkey)
+
+// Each payment already includes fiatSnapshot from Medusa API
+payments.forEach(payment => {
+  console.log(`Payment: ${payment.sats} sats`)
+  console.log(`Value at time: $${payment.fiatSnapshot.USD}`)
+})
+```
+
+### Price Snapshot Caching
+
+The LNbits API automatically batches and caches Medusa price requests to optimize performance:
+
+```typescript
+import { getHistoricalPricesMap } from '@/utils/medusa'
+
+// Group payments by rounded timestamps
+const historicalPricesMap = getHistoricalPricesMap(
+  payments.map((payment) => ({
+    id: payment.payment_hash,
+    timestamp: new Date(payment.time).getTime()
+  }))
+)
+
+// Fetch prices once per unique timestamp
+for (const [timestamp, ids] of Object.entries(historicalPricesMap)) {
+  const fiatSnapshot = await medusa.getBitcoinPricesAt(Number(timestamp))
+  // Use fiatSnapshot for all payments in this timestamp bucket
+}
+```
+
+### Display Historical Values
+
+Show users how much their Lightning transactions were worth at the time:
+
+```typescript
+import medusa from '@/api/medusa'
+import { SATOSHIS_IN_BITCOIN } from '@/constants/btc'
+
+function formatHistoricalValue(sats: number, timestamp: number) {
+  const fiatValues = await medusa.getPricesAt(sats, timestamp)
+  const date = new Date(timestamp).toLocaleDateString()
+
+  return `${sats} sats (${date}): $${fiatValues.USD.toFixed(2)}`
+}
+
+const payment = {
+  sats: 21000,
+  timestamp: new Date('2024-01-15').getTime()
+}
+
+console.log(await formatHistoricalValue(payment.sats, payment.timestamp))
+// Output: 21000 sats (1/15/2024): $9.25
+```
+
+## Data Accuracy
+
+- Historical prices are sourced from reliable cryptocurrency exchanges
+- Prices are available for dates going back to Bitcoin's inception
+- Timestamps are automatically rounded to optimize caching
+- All prices are returned as floating-point numbers with full precision
+
+## Error Handling
+
+The Medusa API uses Zod schema validation for all responses:
+
+```typescript
+import { TimestampPriceSchema } from '@/schemas/medusa'
+
+try {
+  const prices = await medusa.getBitcoinPricesAt(timestamp)
+} catch (error) {
+  // Invalid timestamp or API error
+  console.error('Failed to fetch prices:', error)
+}
+```
+
+## Related
+
+- The LNbits API automatically integrates Medusa prices for payment history
+- See `/api/lnbits` for payment-related functions that use Medusa data
+- Historical price caching is managed by the fiat store

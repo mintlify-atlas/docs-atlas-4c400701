@@ -1,0 +1,271 @@
+---
+title: Installation
+description: Install Medusa Wallet on iOS and Android devices - download from the App Store or Google Play and get started in minutes
+---
+
+# Install Medusa Wallet
+
+Medusa Wallet is available for both iOS and Android devices. Choose your platform below to get started.
+
+## System requirements
+
+<Tabs>
+  <Tab title="iOS">
+    ### iOS requirements
+    
+    - **iOS version:** 13.0 or later
+    - **Device:** iPhone, iPad, or iPod touch
+    - **Storage:** ~50 MB
+    
+    **Supported features:**
+    - Face ID authentication
+    - Camera access for QR code scanning
+    - Secure Keychain storage
+    - Push notifications (coming soon)
+    
+    **Bundle identifier:** `bz.medusa.wallet`
+  </Tab>
+  
+  <Tab title="Android">
+    ### Android requirements
+    
+    - **Android version:** 5.0 (API level 21) or higher
+    - **Storage:** ~50 MB
+    - **Permissions:** Camera access for QR scanning
+    
+    **Supported features:**
+    - Fingerprint/Face unlock authentication
+    - Camera access for QR code scanning  
+    - Secure encrypted storage
+    - Push notifications (coming soon)
+    
+    **Package name:** `bz.medusa.wallet`
+  </Tab>
+</Tabs>
+
+## Download and install
+
+<Tabs>
+  <Tab title="iOS">
+    ### Download from App Store
+    
+    <Steps>
+      <Step title="Open the App Store">
+        Launch the App Store on your iOS device.
+      </Step>
+      
+      <Step title="Search for Medusa Wallet">
+        Search for "Medusa Wallet" or "Lightning Wallet Zero KYC"
+      </Step>
+      
+      <Step title="Download and install">
+        Tap the "Get" button and authenticate with Face ID, Touch ID, or your Apple ID password.
+        
+        The app will download and install automatically.
+      </Step>
+      
+      <Step title="Open the app">
+        Once installed, tap "Open" or find the Medusa Wallet icon on your home screen.
+      </Step>
+    </Steps>
+    
+    ### First launch
+    
+    When you first open the app:
+    
+    1. You'll see a splash screen with the Medusa logo
+    2. The intro screen will appear with "Your Lightning Wallet With Zero KYC"
+    3. Tap "Get Started" to create your account
+    
+    <Info>
+      On first launch, the app will request permission to access your camera (needed for scanning QR codes). You can always grant this permission later in Settings.
+    </Info>
+  </Tab>
+  
+  <Tab title="Android">
+    ### Download from Google Play
+    
+    <Steps>
+      <Step title="Open Google Play Store">
+        Launch the Google Play Store on your Android device.
+      </Step>
+      
+      <Step title="Search for Medusa Wallet">
+        Search for "Medusa Wallet" or "Lightning Wallet Zero KYC"
+      </Step>
+      
+      <Step title="Install the app">
+        Tap "Install" and wait for the download to complete.
+        
+        The app requires the following permissions:
+        - **Camera:** For scanning Lightning invoice QR codes
+      </Step>
+      
+      <Step title="Open the app">
+        Tap "Open" or find the Medusa Wallet icon in your app drawer.
+      </Step>
+    </Steps>
+    
+    ### First launch
+    
+    When you first open the app:
+    
+    1. You'll see a splash screen with the Medusa logo on a dark background
+    2. The intro screen will appear with "Your Lightning Wallet With Zero KYC"
+    3. Tap "Get Started" to create your account
+    
+    <Info>
+      The app uses a dark theme by default but automatically adapts to your system theme preference.
+    </Info>
+    
+    ### Required permissions
+    
+    The app will request the following Android permissions:
+    
+    ```json
+    {
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
+    }
+    ```
+    
+    - **Camera access:** Required for scanning Lightning invoice QR codes and Bitcoin addresses
+    
+    <Note>
+      All permissions are optional but recommended for the best experience. You can manually paste invoices if you don't want to grant camera access.
+    </Note>
+  </Tab>
+</Tabs>
+
+## App configuration
+
+After installation, the app comes pre-configured with:
+
+- **Default LNbits server:** `https://wallet.medusa.bz`
+- **Language:** Automatically detected from device (English/Portuguese)
+- **Fiat currency:** Based on device locale
+- **Bitcoin unit:** Satoshis (sats)
+- **Theme:** Automatic (follows system theme)
+
+<Tip>
+  You can change all these settings later in the Settings menu, including switching to a custom LNbits server URL if you're self-hosting.
+</Tip>
+
+## Verifying the installation
+
+To ensure you have the correct app installed:
+
+1. Check the app icon - it should show the Medusa logo
+2. The splash screen background should be `#0A0A0A` (dark black)
+3. The current version is displayed in Settings > App Version
+
+**Current version:** `0.3.0`
+
+### Version history
+
+The latest version (0.3.0) includes:
+- Swaps and auto swaps with Boltz
+- Download and dismiss buttons for update notifications
+- Internationalization for wallet settings
+- Bug fixes for text wrapping and styling
+
+See the full [changelog](https://github.com/Psycarlo/medusa-wallet/blob/main/CHANGELOG.md) for all updates.
+
+## Troubleshooting installation
+
+### Camera permissions not working
+
+If the app can't access your camera:
+
+<Tabs>
+  <Tab title="iOS">
+    1. Go to iOS Settings > Privacy & Security > Camera
+    2. Find "Medusa Wallet" in the list
+    3. Toggle on camera access
+    4. Return to the app and try scanning again
+  </Tab>
+  
+  <Tab title="Android">
+    1. Go to Android Settings > Apps > Medusa Wallet > Permissions
+    2. Tap "Camera"
+    3. Select "Allow only while using the app"
+    4. Return to the app and try scanning again
+  </Tab>
+</Tabs>
+
+<Info>
+  Even without camera access, you can still use the wallet by pasting Lightning invoices and addresses manually.
+</Info>
+
+### App won't install
+
+- **iOS:** Make sure you have enough storage space and iOS 13.0 or later
+- **Android:** Check that you have Android 5.0 (API 21) or higher
+- Try restarting your device and attempting the installation again
+
+### App crashes on startup
+
+1. Try force-closing the app and reopening it
+2. Check for system updates and install them
+3. Uninstall and reinstall the app (your data is stored on the server, so you can log back in)
+4. Report the issue on [GitHub](https://github.com/Psycarlo/medusa-wallet/issues)
+
+## Updating the app
+
+Medusa Wallet will notify you when a new version is available:
+
+1. You'll see a toast notification: "New version available"
+2. Tap "Download" to go to the App Store/Play Store
+3. Install the update
+4. Your account data and wallets are preserved across updates
+
+<Note>
+  The app checks for updates automatically by querying the GitHub releases API. You can also manually check by visiting your device's app store.
+</Note>
+
+## Using a custom LNbits server
+
+Advanced users can point the app to their own LNbits server:
+
+```typescript
+// The app uses this base URL by default
+const BASE_URL = 'https://wallet.medusa.bz'
+
+// You can change it in Settings > LNbits URL
+```
+
+<Steps>
+  <Step title="Go to Settings">
+    Open the Medusa Wallet app and navigate to Settings
+  </Step>
+  
+  <Step title="Change LNbits URL">
+    Scroll to "LNbits URL" and tap to edit
+  </Step>
+  
+  <Step title="Enter your server URL">
+    Enter your custom LNbits server URL (e.g., `https://your-server.com`)
+  </Step>
+  
+  <Step title="Save changes">
+    Tap "Save" - the app will verify the connection to your server
+  </Step>
+</Steps>
+
+<Warning>
+  Only change the LNbits URL if you're running your own server. Using an incorrect or malicious server could compromise your funds.
+</Warning>
+
+## Next steps
+
+Now that you have Medusa Wallet installed:
+
+<CardGroup cols={2}>
+  <Card title="Quickstart guide" icon="rocket" href="/quickstart">
+    Follow our quickstart guide to create your account and send your first payment
+  </Card>
+  <Card title="Introduction" icon="book" href="/introduction">
+    Learn about all the features and capabilities of Medusa Wallet
+  </Card>
+</CardGroup>

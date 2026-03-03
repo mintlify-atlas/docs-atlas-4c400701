@@ -1,0 +1,672 @@
+---
+title: LNbits API
+description: Authentication, wallet management, payments, and invoices via LNbits
+---
+
+The LNbits API provides core Lightning Network functionality including user authentication, wallet management, payment processing, and invoice generation.
+
+## Import
+
+```typescript
+import lnbits from '@/api/lnbits'
+```
+
+## Authentication
+
+### register
+
+Register a new user account and create a default wallet with paylink.
+
+```typescript
+const accessToken = await lnbits.register(username, email, password)
+```
+
+<ParamField path="username" type="string" required>
+  Unique username for the account
+</ParamField>
+
+<ParamField path="email" type="string" required>
+  Email address for the account
+</ParamField>
+
+<ParamField path="password" type="string" required>
+  Password for the account
+</ParamField>
+
+<ResponseField name="accessToken" type="string">
+  JWT access token for authenticated requests
+</ResponseField>
+
+<Tabs>
+  <Tab title="Usage">
+    ```typescript
+    import lnbits from '@/api/lnbits'
+
+    try {
+      const accessToken = await lnbits.register(
+        'alice',
+        'alice@example.com',
+        'securePassword123'
+      )
+      // Store accessToken securely
+    } catch (error) {
+      console.error('Registration failed:', error.message)
+    }
+    ```
+  </Tab>
+  <Tab title="Response">
+    ```typescript
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+### login
+
+Authenticate an existing user and obtain an access token.
+
+```typescript
+const accessToken = await lnbits.login(username, password)
+```
+
+<ParamField path="username" type="string" required>
+  Account username
+</ParamField>
+
+<ParamField path="password" type="string" required>
+  Account password
+</ParamField>
+
+<ResponseField name="accessToken" type="string">
+  JWT access token for authenticated requests
+</ResponseField>
+
+<Tabs>
+  <Tab title="Usage">
+    ```typescript
+    import lnbits from '@/api/lnbits'
+
+    try {
+      const accessToken = await lnbits.login('alice', 'securePassword123')
+      // Store accessToken securely
+    } catch (error) {
+      console.error('Login failed:', error.message)
+    }
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+### getUser
+
+Retrieve user information including all wallets and balances.
+
+```typescript
+const user = await lnbits.getUser(accessToken)
+```
+
+<ParamField path="accessToken" type="string" required>
+  JWT access token from login or register
+</ParamField>
+
+<ResponseField name="user" type="object">
+  User information and wallets
+  <Expandable title="properties">
+    <ResponseField name="username" type="string">
+      User's username
+    </ResponseField>
+    <ResponseField name="email" type="string">
+      User's email address
+    </ResponseField>
+    <ResponseField name="wallets" type="array">
+      Array of wallet objects with id, name, balance, adminkey, and inkey
+    </ResponseField>
+    <ResponseField name="totalBalance" type="number">
+      Total balance across all wallets in satoshis
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<Tabs>
+  <Tab title="Usage">
+    ```typescript
+    import lnbits from '@/api/lnbits'
+
+    const user = await lnbits.getUser(accessToken)
+    console.log(`Total balance: ${user.totalBalance} sats`)
+    console.log(`Wallets: ${user.wallets.length}`)
+    ```
+  </Tab>
+  <Tab title="React Hook">
+    ```typescript
+    import useUser from '@/hooks/query/useUser'
+
+    function ProfileComponent() {
+      const { data: user, isLoading } = useUser(accessToken)
+
+      if (isLoading) return <Loading />
+
+      return (
+        <div>
+          <h1>{user.username}</h1>
+          <p>Balance: {user.totalBalance} sats</p>
+        </div>
+      )
+    }
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Wallet Management
+
+### createWallet
+
+Create a new wallet for the authenticated user.
+
+```typescript
+const wallet = await lnbits.createWallet(name, adminkey)
+```
+
+<ParamField path="name" type="string" required>
+  Display name for the new wallet
+</ParamField>
+
+<ParamField path="adminkey" type="string" required>
+  Admin key from an existing wallet
+</ParamField>
+
+<ResponseField name="wallet" type="object">
+  Newly created wallet with id, name, balance, adminkey, and inkey
+</ResponseField>
+
+---
+
+### updateWalletName
+
+Update the display name of an existing wallet.
+
+```typescript
+const wallet = await lnbits.updateWalletName(name, adminkey)
+```
+
+<ParamField path="name" type="string" required>
+  New display name for the wallet
+</ParamField>
+
+<ParamField path="adminkey" type="string" required>
+  Admin key of the wallet to update
+</ParamField>
+
+---
+
+### deleteWallet
+
+Permanently delete a wallet.
+
+```typescript
+await lnbits.deleteWallet(walletId, adminkey)
+```
+
+<ParamField path="walletId" type="string" required>
+  ID of the wallet to delete
+</ParamField>
+
+<ParamField path="adminkey" type="string" required>
+  Admin key with permission to delete wallets
+</ParamField>
+
+---
+
+## Payments
+
+### getPayments
+
+Retrieve all successful payments for a wallet with historical fiat prices.
+
+```typescript
+const payments = await lnbits.getPayments(inkey)
+```
+
+<ParamField path="inkey" type="string" required>
+  Invoice key of the wallet
+</ParamField>
+
+<ResponseField name="payments" type="array">
+  Array of payment transactions with fiat snapshots
+</ResponseField>
+
+<Tabs>
+  <Tab title="Usage">
+    ```typescript
+    const payments = await lnbits.getPayments(inkey)
+
+    payments.forEach(payment => {
+      console.log(`${payment.sats} sats - ${payment.fiatSnapshot.USD} USD`)
+    })
+    ```
+  </Tab>
+  <Tab title="React Hook">
+    ```typescript
+    import usePayments from '@/hooks/query/usePayments'
+
+    function PaymentsComponent({ inkeys }) {
+      const { data: payments, isLoading } = usePayments(inkeys, true)
+
+      if (isLoading) return <Loading />
+
+      return (
+        <ul>
+          {payments[0]?.map(payment => (
+            <li key={payment.id}>
+              {payment.sats} sats - {payment.fiatSnapshot.USD} USD
+            </li>
+          ))}
+        </ul>
+      )
+    }
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+### getPaginatedPayments
+
+Retrieve paginated payment history with limit and offset support.
+
+```typescript
+const payments = await lnbits.getPaginatedPayments(
+  inkey,
+  { limit: 20, offset: 0, walletId: 'wallet_id' },
+  snapshots,
+  addSnapshot
+)
+```
+
+<ParamField path="inkey" type="string" required>
+  Invoice key of the wallet
+</ParamField>
+
+<ParamField path="options" type="object">
+  <Expandable title="properties">
+    <ParamField path="limit" type="number" default={20}>
+      Number of payments to fetch
+    </ParamField>
+    <ParamField path="offset" type="number" default={0}>
+      Number of payments to skip
+    </ParamField>
+    <ParamField path="walletId" type="string">
+      Filter by specific wallet ID
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="snapshots" type="Record<string, FiatSnapshot>" required>
+  Cache of historical price snapshots
+</ParamField>
+
+<ParamField path="addSnapshot" type="function" required>
+  Callback to add snapshot to cache
+</ParamField>
+
+---
+
+## Invoices
+
+### createInvoice
+
+Generate a Lightning invoice for receiving payments.
+
+```typescript
+const invoice = await lnbits.createInvoice(amount, inkey, memo)
+```
+
+<ParamField path="amount" type="number" required>
+  Amount in satoshis
+</ParamField>
+
+<ParamField path="inkey" type="string" required>
+  Invoice key of the receiving wallet
+</ParamField>
+
+<ParamField path="memo" type="string">
+  Optional description for the invoice
+</ParamField>
+
+<ResponseField name="invoice" type="object">
+  Invoice object with payment_request and payment_hash
+</ResponseField>
+
+<Tabs>
+  <Tab title="Usage">
+    ```typescript
+    const invoice = await lnbits.createInvoice(
+      1000,
+      inkey,
+      'Payment for coffee'
+    )
+
+    console.log('Invoice:', invoice.payment_request)
+    console.log('Hash:', invoice.payment_hash)
+    ```
+  </Tab>
+  <Tab title="React Hook">
+    ```typescript
+    import useCreateInvoice from '@/hooks/mutation/useCreateInvoice'
+
+    function ReceiveComponent({ inkey }) {
+      const createInvoice = useCreateInvoice(inkey, 1000, 'Coffee')
+
+      return (
+        <button onClick={() => createInvoice.mutate()}>
+          Create Invoice
+        </button>
+      )
+    }
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+### pay
+
+Pay a Lightning invoice (bolt11) or LNURL.
+
+```typescript
+await lnbits.pay(payData, adminkey)
+```
+
+<ParamField path="payData" type="PayData" required>
+  Payment data object
+  <Expandable title="types">
+    <ParamField path="type" type="'bolt11' | 'lnurl'" required>
+      Payment type
+    </ParamField>
+    <ParamField path="invoice" type="string">
+      Bolt11 invoice string (for type='bolt11')
+    </ParamField>
+    <ParamField path="callback" type="string">
+      LNURL callback URL (for type='lnurl')
+    </ParamField>
+    <ParamField path="amount" type="number">
+      Amount in sats (for type='lnurl')
+    </ParamField>
+    <ParamField path="comment" type="string">
+      Optional comment (for type='lnurl')
+    </ParamField>
+    <ParamField path="descriptionHash" type="string">
+      Description hash (for type='lnurl')
+    </ParamField>
+    <ParamField path="description" type="string">
+      Description (for type='lnurl')
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="adminkey" type="string" required>
+  Admin key of the paying wallet
+</ParamField>
+
+<Tabs>
+  <Tab title="Bolt11">
+    ```typescript
+    const payData = {
+      type: 'bolt11',
+      invoice: 'lnbc1000n1...'
+    }
+
+    await lnbits.pay(payData, adminkey)
+    ```
+  </Tab>
+  <Tab title="LNURL">
+    ```typescript
+    const payData = {
+      type: 'lnurl',
+      callback: 'https://...',
+      amount: 1000,
+      comment: 'Thanks!',
+      descriptionHash: '...',
+      description: 'Coffee payment'
+    }
+
+    await lnbits.pay(payData, adminkey)
+    ```
+  </Tab>
+  <Tab title="React Hook">
+    ```typescript
+    import usePay from '@/hooks/mutation/usePay'
+
+    function PayComponent({ adminkey }) {
+      const pay = usePay(adminkey)
+
+      const handlePay = () => {
+        pay.mutate({
+          type: 'bolt11',
+          invoice: 'lnbc1000n1...'
+        })
+      }
+
+      return <button onClick={handlePay}>Pay Invoice</button>
+    }
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+### payInvoice
+
+Directly pay a bolt11 Lightning invoice.
+
+```typescript
+const payment = await lnbits.payInvoice(invoice, adminkey)
+```
+
+<ParamField path="invoice" type="string" required>
+  Bolt11 invoice string
+</ParamField>
+
+<ParamField path="adminkey" type="string" required>
+  Admin key of the paying wallet
+</ParamField>
+
+---
+
+### payLnurl
+
+Pay an LNURL invoice.
+
+```typescript
+const payment = await lnbits.payLnurl(payload, adminkey)
+```
+
+<ParamField path="payload" type="object" required>
+  LNURL payment payload
+  <Expandable title="properties">
+    <ParamField path="callback" type="string" required>
+      LNURL callback URL
+    </ParamField>
+    <ParamField path="amount" type="number" required>
+      Amount in satoshis
+    </ParamField>
+    <ParamField path="comment" type="string">
+      Optional payment comment
+    </ParamField>
+    <ParamField path="descriptionHash" type="string" required>
+      Description hash
+    </ParamField>
+    <ParamField path="description" type="string" required>
+      Payment description
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="adminkey" type="string" required>
+  Admin key of the paying wallet
+</ParamField>
+
+---
+
+## LNURL & Paylinks
+
+### createPaylink
+
+Create an LNURL paylink for receiving payments.
+
+```typescript
+const lnurl = await lnbits.createPaylink(adminkey)
+```
+
+<ParamField path="adminkey" type="string" required>
+  Admin key of the wallet
+</ParamField>
+
+<ResponseField name="lnurl" type="string">
+  LNURL string for receiving payments
+</ResponseField>
+
+---
+
+### getPaylinks
+
+Retrieve all paylinks for a wallet.
+
+```typescript
+const paylinks = await lnbits.getPaylinks(inkey)
+```
+
+<ParamField path="inkey" type="string" required>
+  Invoice key of the wallet
+</ParamField>
+
+<ResponseField name="paylinks" type="array">
+  Array of paylink objects
+</ResponseField>
+
+---
+
+## Conversion & Rates
+
+### convert
+
+Convert satoshis to fiat currency using current exchange rate.
+
+```typescript
+const fiatAmount = await lnbits.convert(sats, fiat)
+```
+
+<ParamField path="sats" type="number" required>
+  Amount in satoshis to convert
+</ParamField>
+
+<ParamField path="fiat" type="SupportedFiatCurrencies" required>
+  Target fiat currency (e.g., 'USD', 'EUR', 'GBP')
+</ParamField>
+
+<ResponseField name="fiatAmount" type="number">
+  Converted amount in the specified fiat currency
+</ResponseField>
+
+---
+
+### rate
+
+Get the current Bitcoin exchange rate for a fiat currency.
+
+```typescript
+const exchangeRate = await lnbits.rate(fiat)
+```
+
+<ParamField path="fiat" type="SupportedFiatCurrencies" required>
+  Fiat currency code
+</ParamField>
+
+<ResponseField name="rate" type="number">
+  Current Bitcoin price in the specified fiat currency
+</ResponseField>
+
+---
+
+## WebSocket Subscriptions
+
+### subscribePaymentWs
+
+Subscribe to payment status updates via WebSocket.
+
+```typescript
+const webSocket = lnbits.subscribePaymentWs(paymentHash, callback)
+```
+
+<ParamField path="paymentHash" type="string" required>
+  Payment hash to monitor
+</ParamField>
+
+<ParamField path="callback" type="function" required>
+  Callback function invoked when payment is confirmed
+</ParamField>
+
+<ResponseField name="webSocket" type="WebSocket">
+  WebSocket connection object
+</ResponseField>
+
+<Tabs>
+  <Tab title="Usage">
+    ```typescript
+    const invoice = await lnbits.createInvoice(1000, inkey)
+
+    const ws = lnbits.subscribePaymentWs(
+      invoice.payment_hash,
+      () => {
+        console.log('Payment received!')
+      }
+    )
+
+    // Cleanup
+    ws.close()
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+### subscribeInkeyWs
+
+Subscribe to all incoming payments for a wallet via WebSocket.
+
+```typescript
+const webSocket = lnbits.subscribeInkeyWs(inkey, callback)
+```
+
+<ParamField path="inkey" type="string" required>
+  Invoice key of the wallet to monitor
+</ParamField>
+
+<ParamField path="callback" type="function" required>
+  Callback function invoked with payment amount when received
+</ParamField>
+
+<ResponseField name="webSocket" type="WebSocket">
+  WebSocket connection object
+</ResponseField>
+
+<Tabs>
+  <Tab title="Usage">
+    ```typescript
+    const ws = lnbits.subscribeInkeyWs(
+      inkey,
+      (amount) => {
+        console.log(`Received ${amount} sats`)
+      }
+    )
+
+    // Cleanup
+    ws.close()
+    ```
+  </Tab>
+</Tabs>

@@ -1,0 +1,557 @@
+---
+title: 'Payment Components'
+description: 'Components for payments, transactions, and amount handling in Medusa Wallet'
+---
+
+## MTransactionCard
+
+A card component that displays transaction details including amount, fiat value, and price change.
+
+### Props
+
+<ParamField path="fiat" type="SupportedFiatCurrencies" required>
+  The fiat currency to display
+</ParamField>
+
+<ParamField path="transaction" type="Transaction" required>
+  Transaction object containing type, sats, timestamp, note, and fiatSnapshot
+</ParamField>
+
+<ParamField path="currentFiatPrice" type="number" required>
+  Current fiat price per satoshi for calculating price change
+</ParamField>
+
+<ParamField path="first" type="boolean" default="false">
+  Whether this is the first card in a list (adds top border radius)
+</ParamField>
+
+<ParamField path="last" type="boolean" default="false">
+  Whether this is the last card in a list (adds bottom border radius)
+</ParamField>
+
+### Transaction Type
+
+```typescript
+type Transaction = {
+  type: 'in' | 'out'
+  sats: number
+  timestamp: number
+  note?: string
+  fiatSnapshot?: Record<SupportedFiatCurrencies, number>
+}
+```
+
+### Usage
+
+```tsx
+import MTransactionCard from '@/components/MTransactionCard'
+
+const transaction = {
+  type: 'in',
+  sats: 50000,
+  timestamp: 1709481600000,
+  note: 'Payment received',
+  fiatSnapshot: { USD: 15.00 }
+}
+
+<MTransactionCard
+  fiat="USD"
+  transaction={transaction}
+  currentFiatPrice={15.50}
+  first={true}
+  onPress={() => showTransactionDetails(transaction)}
+/>
+```
+
+### Features
+
+- Inbound/Outbound icons based on transaction type
+- Amount display with +/- prefix
+- Fiat snapshot with current price comparison
+- Percentage change calculation
+- Relative time display
+- Optional transaction notes
+- Configurable low-value percentage display
+- Border separators except on last item
+
+<Accordion title="Price Change Display">
+The component calculates and displays the percentage change between the fiat snapshot price and current price:
+
+```typescript
+const percentageChange = number.getPercentageChange(
+  transaction.fiatSnapshot[fiat],
+  currentFiatPrice
+)
+```
+
+Low-value changes (< 0.01) can be hidden based on user settings via `displayLowValuePercentage`.
+</Accordion>
+
+---
+
+## MQRCode
+
+A QR code component with loading states, placeholder, and clipboard copy functionality.
+
+### Props
+
+<ParamField path="value" type="string" required>
+  The data to encode in the QR code (e.g., Lightning invoice)
+</ParamField>
+
+<ParamField path="size" type="number" default="280">
+  Size of the QR code in pixels (width and height)
+</ParamField>
+
+<ParamField path="ecl" type="'H' | 'Q' | 'M' | 'L'" default="'M'">
+  Error correction level. Higher levels provide more error tolerance but increase QR code density.
+</ParamField>
+
+<ParamField path="loading" type="boolean">
+  Whether to display loading animation
+</ParamField>
+
+<ParamField path="placeholder" type="boolean">
+  Whether to display placeholder state with prompt message
+</ParamField>
+
+### Usage
+
+```tsx
+import MQRCode from '@/components/MQRCode'
+
+// Active QR code
+<MQRCode 
+  value="lnbc50n1..." 
+  size={300}
+  ecl="M"
+/>
+
+// Loading state
+<MQRCode 
+  value="" 
+  loading={true}
+/>
+
+// Placeholder state
+<MQRCode 
+  value="" 
+  placeholder={true}
+/>
+```
+
+### Features
+
+- Tap to copy QR code value to clipboard
+- Animated loading state with pulsing effect
+- Placeholder state with decorative corners
+- Embedded Medusa logo in QR code center
+- Configurable error correction level
+- Dark theme optimized colors
+
+<Accordion title="States">
+The component handles three states:
+
+1. **Active**: Displays QR code with logo, allows clipboard copy
+2. **Loading**: Pulsing gray rectangle using Reanimated
+3. **Placeholder**: Decorative border with "Add amount to generate" message
+
+The loading animation uses `react-native-reanimated` for smooth 60fps performance:
+
+```typescript
+opacity.value = withRepeat(
+  withTiming(0.4, { duration: 1000, easing: Easing.linear }),
+  -1,
+  true
+)
+```
+</Accordion>
+
+---
+
+## MAmountDisplay
+
+A component for displaying amounts with Bitcoin/fiat toggle and optional max button.
+
+### Props
+
+<ParamField path="type" type="'btc' | 'fiat'" default="'btc'">
+  The current display type
+</ParamField>
+
+<ParamField path="sats" type="number" required>
+  Amount in satoshis
+</ParamField>
+
+<ParamField path="fiat" type="number">
+  Optional fiat amount (calculated from rate if not provided)
+</ParamField>
+
+<ParamField path="fiatCurrency" type="SupportedFiatCurrencies" required>
+  The fiat currency to display
+</ParamField>
+
+<ParamField path="rate" type="number" required>
+  Exchange rate for converting sats to fiat
+</ParamField>
+
+<ParamField path="withMax" type="boolean" default="false">
+  Whether to show the MAX button
+</ParamField>
+
+<ParamField path="onPressMax" type="() => void">
+  Callback when MAX button is pressed
+</ParamField>
+
+<ParamField path="onChangeType" type="(type: MAmountDisplayType) => void">
+  Callback when the display type is toggled
+</ParamField>
+
+### Usage
+
+```tsx
+import MAmountDisplay from '@/components/MAmountDisplay'
+
+const [displayType, setDisplayType] = useState<'btc' | 'fiat'>('btc')
+
+<MAmountDisplay
+  type={displayType}
+  sats={100000}
+  fiatCurrency="USD"
+  rate={30000}
+  withMax={true}
+  onPressMax={() => setAmount(walletBalance)}
+  onChangeType={setDisplayType}
+/>
+```
+
+### Features
+
+- Toggle between Bitcoin and fiat display
+- Large primary amount with smaller secondary amount
+- Optional MAX button for quick balance input
+- Swap icon button for toggling display type
+- Respects user's Bitcoin unit preference (sats/BTC)
+- Automatic fiat conversion
+
+<Accordion title="Display Modes">
+The component shows different layouts based on the type:
+
+**BTC Mode:**
+```
+1,000,000 sats (large)
+$30.00 (small)
+```
+
+**Fiat Mode:**
+```
+$30.00 (large)
+1,000,000 sats (small)
+```
+
+The swap button allows users to toggle between modes, useful during payment flows.
+</Accordion>
+
+---
+
+## MButton
+
+The primary button component with multiple variants and loading states.
+
+### Props
+
+<ParamField path="text" type="string" required>
+  Button label text
+</ParamField>
+
+<ParamField path="variant" type="'default' | 'danger' | 'muted' | 'ghost'" default="'default'">
+  Button style variant
+</ParamField>
+
+<ParamField path="size" type="'default' | 'small'" default="'default'">
+  Button size
+</ParamField>
+
+<ParamField path="textSize" type="'default' | 'small'" default="'default'">
+  Text size within the button
+</ParamField>
+
+<ParamField path="loading" type="boolean">
+  Whether to show loading spinner
+</ParamField>
+
+<ParamField path="disabled" type="boolean">
+  Whether the button is disabled
+</ParamField>
+
+### Usage
+
+```tsx
+import MButton from '@/components/MButton'
+
+// Default button
+<MButton 
+  text="Send Payment" 
+  onPress={handleSend}
+/>
+
+// Loading state
+<MButton 
+  text="Processing..." 
+  loading={true}
+/>
+
+// Danger variant
+<MButton 
+  text="Delete Wallet" 
+  variant="danger"
+  onPress={handleDelete}
+/>
+
+// Small muted button
+<MButton 
+  text="Cancel" 
+  variant="muted"
+  size="small"
+  onPress={handleCancel}
+/>
+```
+
+### Variants
+
+- **default**: Bitcoin orange background (`Colors.bitcoin`)
+- **muted**: Gray background for secondary actions
+- **ghost**: Subtle background with gray text
+- **danger**: Red text for destructive actions
+
+### Features
+
+- Loading state with activity indicator
+- Disabled state with reduced opacity
+- Multiple size options
+- Haptic feedback on press
+- Memoized for performance
+- Inherits all `TouchableHighlight` props
+
+<Accordion title="Loading Behavior">
+When `loading` is true:
+
+1. Text becomes invisible but maintains layout space
+2. Activity indicator appears in absolute position
+3. `activeOpacity` is set to 0 to prevent visual feedback
+4. Button remains in "pressed" state visually
+
+This prevents layout shift during async operations.
+</Accordion>
+
+---
+
+## MPinInput
+
+A visual PIN input display with animated icons for each digit.
+
+### Props
+
+<ParamField path="filledCharacter" type="number | null" required>
+  Number of filled PIN digits (0-4)
+</ParamField>
+
+### Usage
+
+```tsx
+import MPinInput from '@/components/MPinInput'
+
+const [pinLength, setPinLength] = useState(0)
+
+<MPinInput filledCharacter={pinLength} />
+```
+
+### Features
+
+- 4 icon slots (Jellyfish, Fishbone, Speedboat, Bitcoin)
+- Visual feedback as PIN is entered
+- No actual text display for security
+- Consistent with PIN_SIZE configuration
+- Color changes based on filled state
+
+<Accordion title="Security Consideration">
+The component displays icons instead of dots or numbers for enhanced privacy. Each icon represents a filled digit without revealing the actual PIN value.
+
+The PIN size is configured via `PIN_SIZE` constant from `@/config/auth`.
+</Accordion>
+
+---
+
+## MNumPad
+
+A numeric keypad with support for different input types and biometric authentication.
+
+### Props
+
+<ParamField path="type" type="'btc' | 'fiat' | 'sats' | 'auth' | 'pin'" default="'sats'">
+  The type of input, determines available keys
+</ParamField>
+
+<ParamField path="onKeyPress" type="(key: Keys) => void" required>
+  Callback when a key is pressed
+</ParamField>
+
+### Keys Type
+
+```typescript
+type Keys = 
+  | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 
+  | 'DEL' 
+  | ',' 
+  | 'BIOMETRIC'
+```
+
+### Usage
+
+```tsx
+import MNumPad from '@/components/MNumPad'
+
+// Amount input
+<MNumPad 
+  type="btc"
+  onKeyPress={(key) => handleKeyPress(key)}
+/>
+
+// PIN entry with biometric
+<MNumPad 
+  type="auth"
+  onKeyPress={(key) => handleAuthKey(key)}
+/>
+```
+
+### Type Behavior
+
+- **btc/fiat**: Includes comma key for decimal input
+- **sats**: Numbers 0-9 and DEL only
+- **pin**: Numbers 0-9 and DEL only
+- **auth**: Numbers 0-9, DEL, and biometric button (if available)
+
+### Features
+
+- Automatic biometric detection (FaceID/Fingerprint)
+- Haptic feedback on key press
+- Consistent 3x4 grid layout
+- Conditional bottom row based on type
+- Support for multiple authentication types
+
+<Accordion title="Biometric Detection">
+The component automatically detects available biometric authentication:
+
+```typescript
+const supportedBiometricTypes = 
+  await LocalAuthentication.supportedAuthenticationTypesAsync()
+const enrolledLevel = 
+  await LocalAuthentication.getEnrolledLevelAsync()
+```
+
+Biometric button only appears for `auth` type when biometrics are enrolled.
+</Accordion>
+
+---
+
+## MActionButton
+
+A button component for primary actions with icon and text layout.
+
+### Props
+
+<ParamField path="text" type="string" required>
+  Button label text
+</ParamField>
+
+<ParamField path="children" type="React.ReactNode" required>
+  Icon or other content to display alongside text
+</ParamField>
+
+### Usage
+
+```tsx
+import MActionButton from '@/components/MActionButton'
+import Send from '@/components/icons/Send'
+
+<MActionButton 
+  text="Send"
+  onPress={() => navigation.navigate('Send')}
+>
+  <Send />
+</MActionButton>
+```
+
+### Features
+
+- Icon and text horizontal layout
+- Flexible sizing (flex: 1)
+- Consistent padding and border radius
+- Touch feedback
+- Supports any icon component as children
+
+<Accordion title="Common Use Cases">
+Typically used for wallet action buttons:
+
+```tsx
+<MHStack gap="md">
+  <MActionButton text="Send">
+    <Send />
+  </MActionButton>
+  <MActionButton text="Receive">
+    <Receive />
+  </MActionButton>
+</MHStack>
+```
+</Accordion>
+
+---
+
+## MIconButton
+
+A simple icon button with optional press state enhancement.
+
+### Props
+
+<ParamField path="center" type="boolean" default="true">
+  Whether to center the icon content
+</ParamField>
+
+<ParamField path="noEnhanced" type="boolean" default="false">
+  Disable automatic stroke color change on press
+</ParamField>
+
+<ParamField path="children" type="React.ReactNode" required>
+  Icon component to display
+</ParamField>
+
+### Usage
+
+```tsx
+import MIconButton from '@/components/MIconButton'
+import Settings from '@/components/icons/Settings'
+
+<MIconButton onPress={() => navigation.navigate('Settings')}>
+  <Settings />
+</MIconButton>
+```
+
+### Features
+
+- 32x32 default size
+- Automatic icon color enhancement on press
+- Optional centering
+- Clones children to inject press state
+- Memoized for performance
+
+<Accordion title="Enhanced Icons">
+By default, the component clones icon children and changes their stroke color when pressed:
+
+```typescript
+return cloneElement(child, {
+  stroke: isPressed ? Colors.grayLightest : Colors.white
+})
+```
+
+Set `noEnhanced={true}` to disable this behavior for custom icons.
+</Accordion>

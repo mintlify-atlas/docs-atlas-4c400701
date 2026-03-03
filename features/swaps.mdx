@@ -1,0 +1,339 @@
+---
+title: 'Bitcoin Swaps'
+description: 'Convert between Lightning Network and on-chain Bitcoin using submarine swaps powered by Boltz'
+---
+
+## Overview
+
+Medusa Wallet integrates submarine swap technology to seamlessly convert between Lightning Network funds and on-chain Bitcoin. Powered by Boltz, these trustless swaps allow you to move funds between layers without custodial risk.
+
+<Info>
+  Submarine swaps use Hash Time-Locked Contracts (HTLCs) to ensure atomic, trustless exchanges between Lightning and on-chain Bitcoin.
+</Info>
+
+## What are Submarine Swaps?
+
+Submarine swaps are a mechanism for exchanging:
+
+- **Lightning → On-chain** (Reverse Swap): Send Lightning, receive on-chain Bitcoin
+- **On-chain → Lightning** (Normal Swap): Send on-chain Bitcoin, receive Lightning funds
+
+These swaps are:
+- **Trustless**: No counterparty can steal funds
+- **Atomic**: Either the swap completes fully or funds are returned
+- **Non-custodial**: You maintain control throughout the process
+
+## Swap Types
+
+<CardGroup cols={2}>
+  <Card title="Normal Swaps" icon="arrow-down">
+    Convert on-chain Bitcoin to Lightning funds in your wallet
+  </Card>
+  <Card title="Reverse Swaps" icon="arrow-up">
+    Convert Lightning funds to on-chain Bitcoin at your address
+  </Card>
+  <Card title="Auto Swaps" icon="rotate">
+    Automatically convert Lightning balance to on-chain when threshold is reached
+  </Card>
+</CardGroup>
+
+## Lightning to On-chain (Reverse Swap)
+
+Convert your Lightning funds to on-chain Bitcoin:
+
+### Initiating a Reverse Swap
+
+1. Select the wallet with Lightning funds to swap
+2. Navigate to the Swap feature
+3. Choose "Lightning to On-chain"
+4. Enter the amount to swap
+5. Choose between:
+   - **Send Amount**: Specify how much Lightning you want to send
+   - **Receive Amount**: Specify how much on-chain Bitcoin you want to receive
+6. Enter your Bitcoin address where you want to receive funds
+7. Review fees and expected amount
+8. Confirm the swap
+
+### Swap Process
+
+1. **Swap Created**: Medusa creates the swap with Boltz
+2. **Lightning Payment**: Your Lightning funds are locked
+3. **On-chain Settlement**: Boltz sends Bitcoin to your address
+4. **Confirmation**: You receive on-chain Bitcoin
+
+<Note>
+  On-chain transactions require block confirmations. Your Bitcoin will appear in your wallet once confirmed.
+</Note>
+
+### Instant Settlement
+
+Medusa uses instant settlement for reverse swaps:
+
+- Faster completion times
+- Reduced waiting for confirmations
+- Boltz assumes confirmation risk
+
+## On-chain to Lightning (Normal Swap)
+
+Add Lightning funds by sending on-chain Bitcoin:
+
+### Initiating a Normal Swap
+
+1. Select the destination wallet for Lightning funds
+2. Navigate to the Swap feature
+3. Choose "On-chain to Lightning"
+4. Enter the amount you want to receive in Lightning
+5. Provide a refund address (in case swap fails)
+6. Confirm the swap
+
+### Receiving Swap Details
+
+Medusa provides:
+
+- **Bitcoin Address**: Where to send your on-chain Bitcoin
+- **Amount**: Exact amount to send (including fees)
+- **QR Code**: For easy scanning from other wallets
+- **Timeout**: Block height when the swap expires
+
+### Completing the Swap
+
+1. Send the specified amount to the provided address
+2. Wait for on-chain confirmation
+3. Boltz detects the transaction
+4. Lightning funds are credited to your wallet automatically
+
+<Warning>
+  Always send the exact amount specified. Sending incorrect amounts may result in delays or require manual processing.
+</Warning>
+
+## Auto Swap Feature
+
+Automate your Lightning to on-chain conversions:
+
+### What is Auto Swap?
+
+Auto Swap automatically converts Lightning funds to on-chain Bitcoin when your wallet balance reaches a specified threshold. Perfect for:
+
+- Regular savings to cold storage
+- Automatic channel rebalancing
+- Risk management strategies
+
+### Setting Up Auto Swap
+
+1. Select the wallet to monitor
+2. Enable Auto Swap in swap settings
+3. Set the threshold amount (in satoshis)
+4. Provide your Bitcoin address for automatic sends
+5. Configure instant settlement preference
+6. Save the auto swap configuration
+
+### How Auto Swap Works
+
+- **Monitoring**: Medusa monitors your wallet balance
+- **Trigger**: When balance exceeds threshold, swap initiates
+- **Automatic Execution**: Funds are swapped without manual intervention
+- **Repeat**: Process repeats each time threshold is reached
+
+### Managing Auto Swaps
+
+View and manage your auto swap configurations:
+
+- **Status**: See active auto swaps and their trigger amounts
+- **History**: Track how many times each auto swap has executed
+- **Deletion**: Remove auto swap when no longer needed
+
+<Info>
+  You can have one auto swap configuration per wallet.
+</Info>
+
+## Swap Monitoring
+
+### Viewing Active Swaps
+
+Access your swap history and active swaps:
+
+1. Navigate to the Swap section
+2. View list of all swaps across all wallets
+3. See both normal and reverse swaps
+4. Monitor auto swap activity
+
+### Swap Card Information
+
+Each swap displays:
+
+- **Direction**: Lightning → On-chain or On-chain → Lightning
+- **Wallet**: Which wallet is involved
+- **Amount**: Swap amount in satoshis
+- **Expected Amount**: What you'll receive (after fees)
+- **Status**: Current swap state
+- **Timeout Block Height**: When the swap expires
+- **Created Date**: When the swap was initiated
+
+### Swap Status Values
+
+- **Pending**: Waiting for on-chain confirmation or Lightning payment
+- **Transaction Mempool**: On-chain transaction broadcasted
+- **Transaction Confirmed**: On-chain transaction confirmed
+- **Invoice Set**: Lightning invoice has been set
+- **Invoice Paid**: Lightning payment completed
+- **Completed**: Swap successfully finished
+- **Failed**: Swap failed (funds returned)
+- **Expired**: Swap timed out (check refund address)
+
+## Swap Details
+
+### Viewing On-chain Details
+
+For swaps involving on-chain transactions:
+
+1. Tap the swap card
+2. View detailed information including:
+   - Bitcoin address
+   - Transaction ID
+   - Block confirmations
+   - Fee breakdown
+3. Tap "Mempool" to view transaction on Mempool.space
+
+### Understanding Fees
+
+Swap fees consist of:
+
+- **Service Fee**: Boltz swap service fee
+- **Mining Fee**: On-chain transaction fees
+- **Routing Fee**: Lightning network routing fees (minimal)
+
+Total fees are displayed before confirming any swap.
+
+<Note>
+  Fees vary based on network congestion and swap amount. Larger swaps typically have better percentage rates.
+</Note>
+
+## Timeout and Safety
+
+### Swap Timeouts
+
+Every swap has a timeout measured in block height:
+
+- **Normal Swaps**: Timeout after ~24 hours
+- **Reverse Swaps**: Timeout after ~24 hours
+- **Expired Swaps**: Funds returned to refund address
+
+### Current Block Height
+
+Medusa displays the current Bitcoin block height alongside swap timeouts:
+
+- Monitor how much time remains
+- Warning indicators for expiring swaps
+- Timeout alerts when swaps are at risk
+
+### Refund Addresses
+
+<Warning>
+  Always provide a valid refund address you control. This is where funds return if a swap fails or expires.
+</Warning>
+
+For normal swaps:
+- Refund address is required before creating swap
+- Must be a valid Bitcoin address
+- Should be an address you own and can access
+
+## Boltz Configuration
+
+Medusa automatically fetches Boltz swap limits:
+
+- **Minimum Swap Amount**: Smallest swap supported
+- **Maximum Swap Amount**: Largest swap supported
+- **Fee Structure**: Current fee percentages
+- **Network Limits**: Based on current conditions
+
+These limits update dynamically based on network conditions.
+
+## Best Practices
+
+### For All Swaps
+
+1. **Verify Addresses**: Double-check all Bitcoin addresses before confirming
+2. **Monitor Status**: Keep track of swap progress until completion
+3. **Understand Fees**: Review total fees before initiating swaps
+4. **Save Details**: Screenshot or note important swap information
+
+### For Normal Swaps
+
+1. **Send Exact Amount**: Always send precisely the amount specified
+2. **Act Promptly**: Complete swap before timeout
+3. **Valid Refund Address**: Use an address you definitely control
+
+### For Reverse Swaps
+
+1. **Confirmed Address**: Triple-check the destination Bitcoin address
+2. **Amount Selection**: Choose "Receive Amount" for exact on-chain targets
+3. **Wait for Confirmations**: On-chain transactions need time
+
+### For Auto Swaps
+
+1. **Test First**: Try a manual swap before enabling auto swap
+2. **Appropriate Threshold**: Set threshold based on your strategy
+3. **Monitor Activity**: Regularly check auto swap execution history
+4. **Address Security**: Use secure addresses (ideally hardware wallet)
+
+## Technical Details
+
+### Boltz Integration
+
+Medusa integrates with Boltz API for:
+
+- Swap creation and management
+- Configuration fetching
+- Status monitoring
+- Fee calculation
+
+### HTLC Security
+
+Submarine swaps use Hash Time-Locked Contracts:
+
+- **Preimage Secret**: Ensures atomic execution
+- **Timelock**: Provides refund mechanism
+- **Trustless**: No counterparty risk
+
+### Instant Settlement
+
+Reverse swaps with instant settlement:
+
+- Boltz sends on-chain Bitcoin immediately
+- Boltz assumes confirmation risk
+- Faster user experience
+- Slightly higher fee for the service
+
+## Troubleshooting
+
+### Swap Stuck in Pending
+
+- Check on-chain transaction status on Mempool.space
+- Verify correct amount was sent
+- Wait for required confirmations
+- Contact support if timeout is approaching
+
+### Swap Failed
+
+- Funds automatically return to refund address
+- Check refund address for returned funds
+- Review error message for details
+- Verify network conditions weren't unusual
+
+### Can't Create Swap
+
+- Ensure amount is within min/max limits
+- Verify sufficient balance (including fees)
+- Check internet connection
+- Try again if Boltz service was temporarily unavailable
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Security Features" icon="shield-halved" href="/features/security">
+    Learn about keeping your wallet secure
+  </Card>
+  <Card title="Payment Features" icon="bolt" href="/features/payments">
+    Master Lightning Network payments
+  </Card>
+</CardGroup>

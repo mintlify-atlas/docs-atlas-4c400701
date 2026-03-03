@@ -1,0 +1,389 @@
+---
+title: Authentication System
+description: Technical overview of PIN, biometric, and secure storage mechanisms in Medusa Wallet
+---
+
+## Overview
+
+Medusa Wallet implements a multi-layered authentication system combining PIN codes, biometric authentication, and secure storage. The system protects sensitive data like API keys, access tokens, and user credentials.
+
+## Authentication Architecture
+
+The authentication system consists of three main components:
+
+1. **PIN Authentication**: Primary security layer
+2. **Biometric Authentication**: Optional convenience layer (Face ID, Touch ID, fingerprint)
+3. **Secure Storage**: Encrypted storage for sensitive data
+
+## Storage Layers
+
+<Accordion title="MMKV Storage">
+
+Medusa uses [react-native-mmkv](https://github.com/mrousavy/react-native-mmkv) for fast, unencrypted data storage:
+
+```typescript
+import { MMKV } from 'react-native-mmkv'
+
+const storage = new MMKV({ id: 'mmkv.medusa' })
+
+const mmkvStorage: StateStorage = {
+  setItem: (name, value) => {
+    return storage.set(name, value)
+  },
+  getItem: (name) => {
+    const value = storage.getString(name)
+    return value ?? null
+  },
+  removeItem: (name) => {
+    return storage.delete(name)
+  }
+}
+```
+
+**Use Cases:**
+- App state persistence (Zustand stores)
+- User preferences and settings
+- Last background timestamp for lock timing
+- Non-sensitive application data
+
+See `~/workspace/source/storage/mmkv.ts:1-31`
+
+</Accordion>
+
+<Accordion title="Encrypted Storage">
+
+Sensitive data is stored using Expo's SecureStore with hardware-backed encryption:
+
+```typescript
+import * as SecureStore from 'expo-secure-store'
+
+const VERSION = '1'
+
+async function setItem(key: string, value: string) {
+  const vKey = `${VERSION}_${key}`
+  await SecureStore.setItemAsync(vKey, value)
+}
+
+async function getItem(key: string) {
+  const vKey = `${VERSION}_${key}`
+  return SecureStore.getItemAsync(vKey)
+}
+
+async function deleteItem(key: string) {
+  const vKey = `${VERSION}_${key}`
+  return SecureStore.deleteItemAsync(vKey)
+}
+```
+
+**Key Features:**
+- Hardware-backed encryption on supported devices
+- Automatic key versioning for migrations
+- Used exclusively for PIN storage
+- Data persists across app updates
+
+**Storage Locations:**
+- iOS: Keychain Services
+- Android: EncryptedSharedPreferences with AES256
+
+See `~/workspace/source/storage/encrypted.ts:1-21`
+
+</Accordion>
+
+## PIN Authentication
+
+<Accordion title="PIN Storage and Validation">
+
+PINs are stored in encrypted storage and validated through the auth store:
+
+```typescript
+const useAuthStore = create<AuthState & AuthActions>()(persist(
+  (set, get) => ({
+    pinRetries: PIN_RETRIES,
+    
+    setPin: async (pin) => {
+      await setItem(PIN_KEY, pin)
+    },
+    
+    validatePin: async (pin) => {
+      const savedPin = await getItem(PIN_KEY)
+      return pin === savedPin
+    },
+    
+    decrementPinRetries: () => {
+      set({ pinRetries: get().pinRetries - 1 })
+    },
+    
+    resetPinRetries: () => {
+      set({ pinRetries: PIN_RETRIES })
+    }
+  }),
+  {
+    name: 'medusa-auth',
+    storage: createJSONStorage(() => mmkvStorage)
+  }
+))
+```
+
+**Configuration:**
+```typescript
+export const PIN_KEY = 'pin'
+export const PIN_RETRIES = 3
+export const LOCK_TIME = 60_000 // 1 minute
+export const GRACE_PERIOD_TIME = 5_000 // 5 seconds
+```
+
+**PIN Retry Logic:**
+1. User has 3 attempts to enter correct PIN
+2. Each failed attempt decrements retry counter
+3. After 3 failed attempts, user is logged out
+4. Successful authentication resets retry counter
+
+See `~/workspace/source/store/auth.ts:1-96`
+
+</Accordion>
+
+<Accordion title="App Lock Mechanism">
+
+The app automatically locks based on background time:
+
+```typescript
+const handleAppStateChanged = async (nextAppState: AppStateStatus) => {
+  const requiresAuth = pinEnabled && !loggedOut
+  
+  if (requiresAuth && nextAppState === 'background') {
+    setLastBackgroundTimestamp(Date.now())
+  }
+  
+  if (nextAppState === 'active' && appState.current.match(/background|inactive/)) {
+    const elapsed = Date.now() - (getLastBackgroundTimestamp() || 0)
+    
+    // Grace period for quick returns
+    if (elapsed <= GRACE_PERIOD_TIME) {
+      if (lastRoute.current && ['camera', 'send', 'receive'].some(p => 
+        lastRoute.current?.includes(p)
+      )) {
+        router.replace(lastRoute.current)
+        return
+      }
+    }
+    
+    // Lock after LOCK_TIME
+    if (elapsed >= LOCK_TIME || authTriggered) {
+      setAuthTriggered(true)
+      if (!biometricEnabled) {
+        router.navigate('/unlock')
+      }
+    }
+  }
+}
+```
+
+**Lock Behavior:**
+- Lock triggers after 1 minute in background
+- 5-second grace period for quick app switches
+- Grace period preserves route for camera/send/receive screens
+- No lock when user is logged out
+- Lock state persists across app restarts
+
+See `~/workspace/source/hooks/useAppAuthentication.ts:65-148`
+
+</Accordion>
+
+## Biometric Authentication
+
+<Accordion title="Biometric Setup">
+
+Biometric authentication uses Expo's LocalAuthentication:
+
+```typescript
+import * as LocalAuthentication from 'expo-local-authentication'
+
+const ALLOWED_ENROLLED_LEVEL = LocalAuthentication.SecurityLevel.BIOMETRIC_STRONG
+
+function useBiometric() {
+  const [hasBiometric, setHasBiometric] = useState(false)
+  
+  useFocusEffect(
+    useCallback(() => {
+      async function getBiometricDeviceInfo() {
+        const enrolledLevel = await LocalAuthentication.getEnrolledLevelAsync()
+        setHasBiometric(enrolledLevel >= ALLOWED_ENROLLED_LEVEL)
+      }
+      
+      getBiometricDeviceInfo()
+    }, [])
+  )
+  
+  async function biometricAuth() {
+    const authenticateResult = await LocalAuthentication.authenticateAsync({
+      disableDeviceFallback: true
+    })
+    
+    return authenticateResult.success
+  }
+  
+  return { hasBiometric, biometricAuth }
+}
+```
+
+**Security Requirements:**
+- Device must have biometric hardware
+- User must be enrolled (Face ID/Touch ID configured)
+- Enrolled level must be `BIOMETRIC_STRONG` or higher
+- Device fallback (passcode) is disabled for security
+
+See `~/workspace/source/hooks/useBiometric.ts:1-39`
+
+</Accordion>
+
+<Accordion title="Biometric Authentication Flow">
+
+Biometric takes precedence over PIN when enabled and available:
+
+```typescript
+if (elapsed >= LOCK_TIME || authTriggered) {
+  setAuthTriggered(true)
+  
+  if (!biometricEnabled) {
+    router.navigate('/unlock')
+  } else {
+    // Check biometric requirements
+    const [hasHardware, isEnrolled, enrolledLevel] = await Promise.all([
+      LocalAuthentication.hasHardwareAsync(),
+      LocalAuthentication.isEnrolledAsync(),
+      LocalAuthentication.getEnrolledLevelAsync()
+    ])
+    
+    if (
+      !hasHardware ||
+      !isEnrolled ||
+      enrolledLevel < ALLOWED_ENROLLED_LEVEL
+    ) {
+      // Fall back to PIN
+      router.navigate('/unlock')
+    } else {
+      // Show black screen while authenticating
+      router.replace('/(modals)/empty')
+      
+      const authenticateResult = await LocalAuthentication.authenticateAsync({
+        disableDeviceFallback: true
+      })
+      
+      if (authenticateResult.success) {
+        setAuthTriggered(false)
+        router.replace('/')
+      } else {
+        // Fall back to PIN on failure
+        router.navigate('/unlock')
+      }
+    }
+  }
+}
+```
+
+**Authentication Priority:**
+1. Biometric (if enabled and available)
+2. PIN fallback (if biometric fails or unavailable)
+3. Logout (if PIN attempts exhausted)
+
+See `~/workspace/source/hooks/useAppAuthentication.ts:100-134`
+
+</Accordion>
+
+## Privacy Screen
+
+<Accordion title="Inactive State Privacy">
+
+The app displays a privacy screen when inactive to protect sensitive information:
+
+```typescript
+if (
+  nextAppState === 'inactive' ||
+  (Platform.OS === 'android' && nextAppState === 'background')
+) {
+  router.replace('/(modals)/privacy')
+}
+```
+
+**Behavior:**
+- Triggers on `inactive` state (iOS)
+- Triggers on `background` state (Android, due to app switcher behavior)
+- Replaces current screen to hide sensitive data
+- Prevents screenshots in app switcher
+- Automatically dismissed when app becomes active
+
+See `~/workspace/source/hooks/useAppAuthentication.ts:73-78`
+
+</Accordion>
+
+## Auth Store State
+
+<Accordion title="State Management">
+
+The auth store manages authentication state across the app:
+
+```typescript
+type AuthState = {
+  firstTime: boolean          // First-time user flag
+  loggedOut: boolean          // Current login state
+  username: string            // Current username
+  email: string               // User email
+  accessToken: string         // LNbits access token
+  newPin: string              // Temporary PIN during setup
+  pinRetries: number          // Remaining PIN attempts
+  authTriggered: boolean      // Lock state flag
+}
+
+type AuthActions = {
+  setFirstTime: (firstTime: boolean) => void
+  setLoggedOut: (loggedOut: boolean) => void
+  setUsername: (username: string) => void
+  setEmail: (email: string) => void
+  setPin: (pin: string) => Promise<void>
+  validatePin: (pin: string) => Promise<boolean>
+  setAccessToken: (accessToken: string) => void
+  setNewPin: (newPin: string) => void
+  decrementPinRetries: () => void
+  resetPinRetries: () => void
+  setAuthTriggered: (authTriggered: boolean) => void
+  logout: () => void
+}
+```
+
+**Persistence:**
+- State persists to MMKV storage
+- PIN stored separately in encrypted storage
+- Access token cleared on logout
+- Retry counter resets on successful auth
+
+See `~/workspace/source/store/auth.ts:8-32`
+
+</Accordion>
+
+## Security Best Practices
+
+1. **Layered Security**: PIN required, biometric optional enhancement
+2. **Hardware Encryption**: Leverage device secure storage
+3. **No Password Storage**: Only store encrypted PINs
+4. **Automatic Locking**: Time-based app locks
+5. **Retry Limits**: Forced logout after failed attempts
+6. **Privacy Screen**: Hide data in app switcher
+7. **No Screenshot Logging**: Sensitive screens protected
+
+## Configuration Constants
+
+Key authentication constants:
+
+```typescript
+// Lock timing
+export const LOCK_TIME = 60_000          // 1 minute
+export const GRACE_PERIOD_TIME = 5_000   // 5 seconds
+
+// PIN security
+export const PIN_KEY = 'pin'
+export const PIN_RETRIES = 3
+
+// Biometric requirements
+export const ALLOWED_ENROLLED_LEVEL = 
+  LocalAuthentication.SecurityLevel.BIOMETRIC_STRONG
+```

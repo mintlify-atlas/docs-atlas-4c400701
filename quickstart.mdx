@@ -1,80 +1,223 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart guide
+description: Get started with Medusa Wallet in minutes - create your account, set up your first wallet, and send your first Lightning payment
 ---
 
-## Get started in three steps
+# Get started with Medusa Wallet
 
-Get your documentation site running locally and make your first customization.
+This guide will walk you through getting started with Medusa Wallet, from installation to sending your first Lightning payment.
 
-### Step 1: Set up your local environment
-
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+<Steps>
+  <Step title="Download and install the app">
+    Download Medusa Wallet from the App Store (iOS) or Google Play Store (Android).
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
+    See the [Installation guide](/installation) for detailed platform-specific instructions.
     
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+    <Info>
+      The app is built with Expo and requires iOS 13+ or Android 5.0+ (API level 21+)
+    </Info>
+  </Step>
 
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
+  <Step title="Create your account">
+    When you first launch the app, you'll see the intro screen. Tap "Get Started" to begin.
     
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    ### Sign up process
+    
+    On the sign up screen, you'll need to provide:
+    
+    - **Username** - Your unique identifier for logging in
+    - **Email** - Can be any email, even a throwaway address
+    - **Password** - Secure password for your account
+    
+    <Tip>
+      You can use a throwaway email address if you prefer maximum privacy. Just make sure you remember your username and password!
+    </Tip>
+    
+    The sign up process automatically:
+    1. Creates your account on the LNbits backend
+    2. Generates your first default wallet
+    3. Creates a Lightning address (username@wallet.medusa.bz)
+    
+    ```typescript
+    // What happens behind the scenes
+    const accessToken = await lnbits.register(username, email, password)
+    const user = await lnbits.getUser(accessToken)
+    // Your first wallet is automatically created!
+    ```
+  </Step>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+  <Step title="Set up security">
+    After creating your account, set up security features to protect your wallet:
+    
+    ### PIN code
+    
+    Create a 4-digit PIN code that you'll use to unlock the app:
+    
+    1. Navigate to Settings > Security
+    2. Enable "App PIN"
+    3. Enter your 4-digit PIN twice to confirm
+    
+    ### Biometric authentication (optional)
+    
+    Enable Face ID or Touch ID for faster access:
+    
+    1. Go to Settings > Security > Biometric
+    2. Toggle on biometric authentication
+    3. Authenticate with your device's biometric sensor
+    
+    <Note>
+      You'll need to have a PIN set up before enabling biometric authentication. The biometric feature is a convenience option that falls back to PIN if needed.
+    </Note>
+  </Step>
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+  <Step title="Create your first wallet (optional)">
+    Your account comes with a default wallet, but you can create additional wallets to organize your funds.
+    
+    ### Creating a new wallet
+    
+    1. Go to the Wallets screen
+    2. Tap the "New Wallet" button
+    3. Enter a name for your wallet (e.g., "Savings", "Daily Spending")
+    4. Tap "Create Wallet"
+    
+    <Info>
+      Each wallet has:
+      - Its own balance
+      - Separate transaction history
+      - Unique Lightning address
+      - Individual admin and invoice keys
+    </Info>
+    
+    You can have as many wallets as you need to organize your Bitcoin.
+  </Step>
 
-### Step 3: Go live
+  <Step title="Receive your first payment">
+    Let's receive some sats to get started!
+    
+    ### Option 1: Lightning invoice
+    
+    1. Select the wallet you want to receive funds in
+    2. Tap "Receive"
+    3. Enter the amount you want to receive (in sats)
+    4. Optionally add a memo/description
+    5. Tap "Create Lightning Request"
+    6. Share the QR code or copy the Lightning invoice
+    
+    The invoice looks like this:
+    ```
+    lnbc100n1p3...[Lightning invoice]
+    ```
+    
+    <Tip>
+      Lightning invoices are typically valid for a limited time. Make sure to share it promptly with the sender!
+    </Tip>
+    
+    ### Option 2: Lightning address
+    
+    Your Lightning address is automatically created when you sign up:
+    
+    ```
+    [your-wallet-id]@wallet.medusa.bz
+    ```
+    
+    Anyone can send you sats using this address, similar to an email address!
+    
+    ### Real-time notifications
+    
+    The app uses WebSocket connections to notify you instantly when payments are received:
+    
+    ```typescript
+    // Behind the scenes
+    lnbits.subscribeInkeyWs(inkey, (amount) => {
+      toast.success(`Received ${amount} sats!`)
+    })
+    ```
+  </Step>
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+  <Step title="Send your first payment">
+    Ready to send some sats? Here's how:
+    
+    ### Scanning a Lightning invoice
+    
+    1. Tap "Send" or the scan icon
+    2. Allow camera permissions when prompted
+    3. Scan the recipient's Lightning invoice QR code
+    4. Review the payment details (amount, recipient, memo)
+    5. Tap "Confirm Send"
+    6. Wait for the payment to complete
+    
+    <Note>
+      Camera permissions are required to scan QR codes. The app only uses the camera for scanning - it doesn't store or transmit any images.
+    </Note>
+    
+    ### Pasting a Lightning invoice
+    
+    If you have an invoice copied to your clipboard:
+    
+    1. Tap "Send"
+    2. If camera access is denied, you'll see a "Paste" option
+    3. The app will automatically detect Lightning invoices, addresses, or URLs from your clipboard
+    4. Review and confirm the payment
+    
+    ### Payment confirmation
+    
+    After sending, you'll see a success message and the payment will appear in your transaction history with:
+    
+    - Amount sent
+    - Timestamp
+    - Recipient information
+    - Fee paid
+    - Fiat value at time of payment
+  </Step>
+
+  <Step title="View your transaction history">
+    Keep track of all your payments:
+    
+    1. Select any wallet to view its transactions
+    2. See incoming (green) and outgoing (red) payments
+    3. Tap any transaction to view details
+    4. Add personal notes to transactions for your records
+    
+    Each transaction shows:
+    - Amount in sats and your selected fiat currency
+    - Timestamp with relative time ("2 hours ago")
+    - Description/memo
+    - Payment hash
+    - Fee information
+    
+    <Tip>
+      You can add private notes to any transaction. These notes are stored locally and help you remember what each payment was for.
+    </Tip>
+  </Step>
+</Steps>
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
+Now that you have your wallet set up, explore these features:
 
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Buy Bitcoin" icon="shopping-cart">
+    Purchase sats with your credit card using the built-in voucher system - no KYC required
+  </Card>
+  <Card title="Swap to onchain" icon="arrows-rotate">
+    Move funds between Lightning and Bitcoin onchain using Boltz swaps
+  </Card>
+  <Card title="Create multiple wallets" icon="wallet">
+    Organize your funds across different wallets for savings, spending, etc.
+  </Card>
+  <Card title="Customize settings" icon="gear">
+    Change your preferred fiat currency, Bitcoin unit (sats/BTC), language, and theme
+  </Card>
 </CardGroup>
 
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
+## Getting help
+
+Need assistance?
+
+- Report bugs on [GitHub Issues](https://github.com/Psycarlo/medusa-wallet/issues)
+- Check the changelog for recent updates and fixes
+- Join the community discussions
+
+<Info>
+  Medusa Wallet is open source! You can view the code, contribute, or fork it on [GitHub](https://github.com/Psycarlo/medusa-wallet).
+</Info>

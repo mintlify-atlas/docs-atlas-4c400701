@@ -1,0 +1,523 @@
+---
+title: Building and Running the App
+description: Learn how to build, run, and debug Medusa Wallet on different platforms
+---
+
+## Development Server
+
+Start the Expo development server with the dev client:
+
+```bash
+pnpm start
+```
+
+This command starts the Metro bundler and opens the Expo DevTools. You can then:
+
+- Press `i` to open iOS simulator
+- Press `a` to open Android emulator
+- Scan the QR code with Expo Go app (development builds only)
+
+<Info>
+  The development server runs on the default Expo port. The app uses a custom dev client, so you'll need to build it first (see below).
+</Info>
+
+## Running on iOS
+
+<Warning>
+  iOS development requires a Mac with Xcode installed.
+</Warning>
+
+### Development Build
+
+Run the app on iOS simulator or connected device:
+
+<Steps>
+  <Step title="Start iOS simulator">
+    Open Xcode and launch a simulator, or connect a physical iOS device.
+  </Step>
+
+  <Step title="Run the development build">
+    ```bash
+    pnpm ios
+    ```
+
+    This command:
+    1. Builds the native iOS app
+    2. Installs it on the simulator/device
+    3. Starts the Metro bundler
+    4. Opens the app automatically
+  </Step>
+</Steps>
+
+### iOS Simulator Selection
+
+To run on a specific simulator:
+
+```bash
+# List available simulators
+xcrun simctl list devices
+
+# Run on specific simulator
+pnpm ios --simulator="iPhone 15 Pro"
+```
+
+### iOS Device Configuration
+
+The app is configured with:
+
+- **Bundle Identifier**: `bz.medusa.wallet`
+- **Supports iPad**: Yes
+- **Orientation**: Portrait only
+- **Required Capabilities**: Camera, Face ID
+
+<Note>
+  Check `app.json` for the complete iOS configuration:
+
+  ```json
+  "ios": {
+    "supportsTablet": true,
+    "bundleIdentifier": "bz.medusa.wallet"
+  }
+  ```
+</Note>
+
+## Running on Android
+
+### Development Build
+
+Run the app on Android emulator or connected device:
+
+<Steps>
+  <Step title="Start Android emulator">
+    Launch an Android Virtual Device (AVD) from Android Studio, or connect a physical Android device with USB debugging enabled.
+  </Step>
+
+  <Step title="Run the development build">
+    ```bash
+    pnpm android
+    ```
+
+    This command:
+    1. Builds the native Android app
+    2. Installs it on the emulator/device
+    3. Starts the Metro bundler on port 8082
+    4. Opens the app automatically
+
+    <Info>
+      The Android script uses a custom port (8082) to avoid conflicts:
+
+      ```json
+      "android": "expo run:android --port 8082"
+      ```
+    </Info>
+  </Step>
+</Steps>
+
+### Android Device Configuration
+
+The app is configured with:
+
+- **Package Name**: `bz.medusa.wallet`
+- **Version Code**: 3
+- **Target SDK**: Latest (via Expo)
+- **Permissions**: Camera
+- **Status Bar**: Light content on dark background
+
+```json
+"android": {
+  "package": "bz.medusa.wallet",
+  "versionCode": 3,
+  "permissions": ["android.permission.CAMERA"],
+  "adaptiveIcon": {
+    "backgroundColor": "#0A0A0A"
+  }
+}
+```
+
+### Android Emulator Tips
+
+<AccordionGroup>
+  <Accordion title="Check connected devices">
+    ```bash
+    adb devices
+    ```
+
+    You should see your emulator or device listed.
+  </Accordion>
+
+  <Accordion title="Reverse port for Metro bundler">
+    If the app can't connect to Metro:
+
+    ```bash
+    adb reverse tcp:8082 tcp:8082
+    ```
+  </Accordion>
+
+  <Accordion title="Clear app data">
+    ```bash
+    adb shell pm clear bz.medusa.wallet
+    ```
+  </Accordion>
+
+  <Accordion title="View logs">
+    ```bash
+    # View all logs
+    adb logcat
+
+    # Filter React Native logs
+    adb logcat | grep ReactNative
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Platform Differences
+
+When developing for both platforms, be aware of these differences:
+
+<Tabs>
+  <Tab title="iOS">
+    ### iOS-Specific Features
+
+    - **Face ID**: Configured with permission message
+    - **Haptics**: Different feedback patterns
+    - **Status Bar**: Managed by `expo-status-bar`
+    - **Safe Areas**: Automatic handling for notches
+
+    ### iOS Configuration
+
+    ```javascript
+    // Platform-specific code
+    if (Platform.OS === 'ios') {
+      // iOS-specific logic
+    }
+    ```
+  </Tab>
+
+  <Tab title="Android">
+    ### Android-Specific Features
+
+    - **Navigation Bar**: Custom color (`#0A0A0A`)
+    - **Status Bar**: Custom styling
+    - **Adaptive Icon**: Custom background color
+    - **System UI**: Background color override
+
+    ### Android Configuration
+
+    ```javascript
+    // Platform-specific code
+    if (Platform.OS === 'android') {
+      SystemUI.setBackgroundColorAsync(Colors.dark)
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Development Tools
+
+### React Query DevTools
+
+The app includes React Query DevTools for debugging:
+
+<Steps>
+  <Step title="Enable DevTools">
+    DevTools are automatically enabled in development mode:
+
+    ```typescript
+    // app/_layout.tsx
+    import { useReactQueryDevTools } from '@dev-plugins/react-query'
+
+    const queryClient = new QueryClient()
+    useReactQueryDevTools(queryClient)
+    ```
+  </Step>
+
+  <Step title="Access DevTools">
+    Open the Expo DevTools and navigate to the React Query panel to:
+    - View active queries
+    - Inspect cache state
+    - Debug refetch behavior
+    - Monitor network requests
+  </Step>
+</Steps>
+
+<Tip>
+  Learn more about React Query DevTools in the [Expo documentation](https://docs.expo.dev/debugging/devtools-plugins/#react-query).
+</Tip>
+
+### Metro Bundler
+
+The Metro bundler provides useful commands during development:
+
+<CardGroup cols={2}>
+  <Card title="Reload App" icon="rotate">
+    Press `r` in the terminal
+  </Card>
+  <Card title="Open DevTools" icon="window-maximize">
+    Press `d` in the terminal
+  </Card>
+  <Card title="Toggle Element Inspector" icon="magnifying-glass">
+    Press `i` in the terminal
+  </Card>
+  <Card title="Clear Cache" icon="trash">
+    Press `Shift + r` in the terminal
+  </Card>
+</CardGroup>
+
+### Remote Debugging
+
+Debug JavaScript in Chrome DevTools:
+
+1. Shake your device (or press `Cmd+D` on iOS simulator / `Cmd+M` on Android emulator)
+2. Select "Debug" from the menu
+3. Chrome will open with DevTools
+
+<Warning>
+  Remote debugging can cause performance issues. Use it only when necessary.
+</Warning>
+
+## Code Quality
+
+Ensure code quality before committing:
+
+<CodeGroup>
+  ```bash Type checking
+  pnpm type-check
+  ```
+
+  ```bash Linting
+  pnpm lint
+  ```
+
+  ```bash Format check
+  pnpm format
+  ```
+
+  ```bash Format fix
+  pnpm format:fix
+  ```
+</CodeGroup>
+
+### Pre-commit Workflow
+
+Recommended workflow before committing:
+
+```bash
+# 1. Check types
+pnpm type-check
+
+# 2. Fix formatting
+pnpm format:fix
+
+# 3. Run linter
+pnpm lint
+
+# 4. Run tests
+pnpm test
+```
+
+## Production Builds
+
+<Warning>
+  Production builds require EAS (Expo Application Services) configuration.
+</Warning>
+
+### EAS Configuration
+
+The app uses EAS for production builds:
+
+```json
+// eas.json
+{
+  "build": {
+    "development": {
+      "developmentClient": true
+    },
+    "preview": {
+      "distribution": "internal"
+    },
+    "production": {}
+  }
+}
+```
+
+### Build Commands
+
+<Tabs>
+  <Tab title="iOS">
+    ```bash
+    # Development build
+    eas build --profile development --platform ios
+
+    # Production build
+    eas build --profile production --platform ios
+    ```
+  </Tab>
+
+  <Tab title="Android">
+    ```bash
+    # Development build
+    eas build --profile development --platform android
+
+    # Production build
+    eas build --profile production --platform android
+    ```
+  </Tab>
+</Tabs>
+
+<Info>
+  EAS builds run on Expo's servers. You'll need an Expo account to use EAS Build.
+</Info>
+
+## Testing
+
+### Running Tests
+
+The app includes unit and integration tests:
+
+<CodeGroup>
+  ```bash All tests
+  pnpm test
+  ```
+
+  ```bash Unit tests
+  pnpm test:unit
+  ```
+
+  ```bash Integration tests
+  pnpm test:int
+  ```
+
+  ```bash Watch mode
+  pnpm test --watch
+  ```
+</CodeGroup>
+
+### Test Structure
+
+```
+tests/
+├── unit/
+│   └── utils/              # Utility function tests
+│       ├── wallet.test.ts
+│       ├── format.test.ts
+│       └── validation.test.ts
+└── int/
+    └── api/                # API integration tests
+        └── medusa.test.ts
+```
+
+### Writing Tests
+
+Example test file:
+
+```typescript
+import { formatBitcoin } from '@/utils/format'
+
+describe('formatBitcoin', () => {
+  it('should format satoshis correctly', () => {
+    expect(formatBitcoin(100000000)).toBe('1.00000000')
+  })
+})
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Metro bundler not starting">
+    Clear the Metro cache:
+
+    ```bash
+    pnpm start --clear
+    ```
+
+    Or manually:
+
+    ```bash
+    rm -rf node_modules/.cache
+    ```
+  </Accordion>
+
+  <Accordion title="Build fails on iOS">
+    1. Clean the build folder:
+       ```bash
+       cd ios
+       xcodebuild clean
+       cd ..
+       ```
+
+    2. Reinstall CocoaPods:
+       ```bash
+       cd ios
+       rm -rf Pods Podfile.lock
+       pod install
+       cd ..
+       ```
+
+    3. Rebuild:
+       ```bash
+       pnpm ios
+       ```
+  </Accordion>
+
+  <Accordion title="Build fails on Android">
+    1. Clean the Gradle cache:
+       ```bash
+       cd android
+       ./gradlew clean
+       cd ..
+       ```
+
+    2. Rebuild:
+       ```bash
+       pnpm android
+       ```
+  </Accordion>
+
+  <Accordion title="App crashes on launch">
+    Check the logs:
+
+    **iOS:**
+    ```bash
+    xcrun simctl spawn booted log stream --level debug
+    ```
+
+    **Android:**
+    ```bash
+    adb logcat
+    ```
+  </Accordion>
+
+  <Accordion title="Hot reload not working">
+    1. Ensure you're connected to the same network
+    2. Restart Metro bundler
+    3. Reload the app (`r` in terminal)
+  </Accordion>
+</AccordionGroup>
+
+## Performance Optimization
+
+<CardGroup cols={2}>
+  <Card title="Use FlashList" icon="bolt">
+    Replace `FlatList` with `@shopify/flash-list` for better performance
+  </Card>
+  <Card title="Optimize Images" icon="image">
+    Use `expo-image` for optimized image loading
+  </Card>
+  <Card title="Memoization" icon="memory">
+    Use `React.memo()` and `useMemo()` for expensive computations
+  </Card>
+  <Card title="Code Splitting" icon="scissors">
+    Lazy load components with `React.lazy()` and `Suspense`
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Architecture" icon="sitemap" href="/development/architecture">
+    Learn about the app architecture
+  </Card>
+  <Card title="Contributing" icon="code-pull-request" href="https://github.com/Psycarlo/medusa-wallet">
+    Contribute to Medusa Wallet
+  </Card>
+</CardGroup>

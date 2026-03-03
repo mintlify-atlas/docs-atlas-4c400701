@@ -1,0 +1,448 @@
+---
+title: Fiat Conversion System
+description: How Medusa Wallet handles real-time and historical fiat price conversion for Bitcoin and Lightning payments
+---
+
+## Overview
+
+Medusa Wallet provides comprehensive fiat conversion features, allowing users to view balances and transaction amounts in their preferred currency. The system supports both real-time conversion for current balances and historical conversion for past transactions.
+
+## Architecture
+
+The fiat conversion system uses two separate APIs:
+
+1. **LNbits API**: Real-time conversion for current balances
+2. **Medusa API**: Historical price data for transaction history
+
+## Real-Time Conversion
+
+<Accordion title="Converting Satoshis to Fiat">
+
+The LNbits backend provides real-time conversion rates:
+
+```typescript
+async function convert(sats: number, fiat: SupportedFiatCurrencies) {
+  const response = await fetch(`${getCurrentBaseUrl()}/api/v1/conversion`, {
+    headers,
+    method: 'POST',
+    body: JSON.stringify({ 
+      from: 'sats', 
+      amount: sats, 
+      to: fiat 
+    })
+  })
+  
+  const json = await response.json()
+  const data = ConversionSchema.parse(json)
+  
+  return data[fiat]
+}
+```
+
+**Supported Currencies:**
+The wallet supports major fiat currencies including USD, EUR, GBP, JPY, and more through the `SupportedFiatCurrencies` type.
+
+See `~/workspace/source/api/lnbits.ts:213-228`
+
+</Accordion>
+
+<Accordion title="Fetching Exchange Rates">
+
+For displaying current exchange rates without converting a specific amount:
+
+```typescript
+async function rate(fiat: SupportedFiatCurrencies) {
+  const response = await fetch(`${getCurrentBaseUrl()}/api/v1/rate/${fiat}`, {
+    headers
+  })
+  
+  const json = await response.json()
+  const result = RateSchema.safeParse(json)
+  
+  if (result.error) throw new Error('Rate not loaded')
+  
+  return result.data.rate
+}
+```
+
+This returns the current Bitcoin price in the specified fiat currency.
+
+See `~/workspace/source/api/lnbits.ts:230-247`
+
+</Accordion>
+
+## Historical Price Data
+
+<Accordion title="Medusa Price API">
+
+The Medusa API provides historical Bitcoin prices for all supported currencies:
+
+```typescript
+const BASE_URL = 'https://api.medusa.bz'
+const API_URL = `${BASE_URL}/v1`
+
+const credentials = btoa(`${USERNAME}:${PASSWORD}`)
+const headers = {
+  'Content-Type': 'application/json',
+  Authorization: `Basic ${credentials}`
+}
+
+async function getBitcoinPricesAt(timestamp: number) {
+  const response = await fetch(
+    `${API_URL}/btcPriceAll?unix_time=${timestamp}`,
+    { headers, method: 'GET' }
+  )
+  
+  const json = await response.json()
+  const data = TimestampPriceSchema.parse(json)
+  
+  return data.bitcoin
+}
+```
+
+**Response Format:**
+```typescript
+type FiatSnapshot = {
+  usd: number
+  eur: number
+  gbp: number
+  jpy: number
+  // ... other currencies
+}
+```
+
+See `~/workspace/source/api/medusa.ts:1-29`
+
+</Accordion>
+
+<Accordion title="Converting Historical Amounts">
+
+For transaction history, convert specific amounts at historical timestamps:
+
+```typescript
+async function getPricesAt(sats: number, timestamp: number) {
+  const response = await fetch(
+    `${API_URL}/btcPriceAll?unix_time=${timestamp}`,
+    { headers, method: 'GET' }
+  )
+  
+  const json = await response.json()
+  const data = TimestampPriceSchema.parse(json)
+  
+  // Convert BTC prices to amount-specific prices
+  const prices = data.bitcoin
+  for (const fiat in data.bitcoin) {
+    prices[fiat as keyof typeof data.bitcoin] = Number(
+      (
+        (sats / SATOSHIS_IN_BITCOIN) *
+        data.bitcoin[fiat as keyof typeof data.bitcoin]
+      ).toFixed(2)
+    )
+  }
+  
+  return prices
+}
+```
+
+**Conversion Formula:**
+```typescript
+const SATOSHIS_IN_BITCOIN = 100_000_000
+
+fiatAmount = (sats / SATOSHIS_IN_BITCOIN) * btcPrice
+```
+
+See `~/workspace/source/api/medusa.ts:31-54`
+
+</Accordion>
+
+## Transaction History with Fiat Data
+
+<Accordion title="Efficient Historical Price Fetching">
+
+When fetching payment history, the wallet optimizes API calls by grouping transactions by timestamp:
+
+```typescript
+async function getPaginatedPayments(
+  inkey: string,
+  options: GetPaginatedPaymentsOptions,
+  snapshots: Record<string, FiatSnapshot>,
+  addSnapshot: (timestamp: string, snapshot: FiatSnapshot) => void
+) {
+  // Fetch payments from LNbits
+  const payments = await fetchPayments(inkey, options)
+  
+  // Group payments by timestamp for efficient price fetching
+  const historicalPricesMap = getHistoricalPricesMap(
+    payments.map((payment) => ({
+      id: payment.payment_hash,
+      timestamp: new Date(payment.time).getTime()
+    }))
+  )
+  
+  const fiatSnapshotForIds: Record<string, FiatSnapshot> = {}
+  
+  // Fetch prices for each unique timestamp
+  for (const [timestamp, ids] of Object.entries(historicalPricesMap)) {
+    let fiatSnapshot: FiatSnapshot
+    
+    // Use cached snapshot if available
+    if (snapshots[timestamp]) {
+      fiatSnapshot = snapshots[timestamp]
+    } else {
+      const ts = Number(timestamp)
+      fiatSnapshot = await medusa.getBitcoinPricesAt(ts)
+    }
+    
+    // Map snapshot to all transactions with this timestamp
+    for (const id of ids) {
+      fiatSnapshotForIds[id] = fiatSnapshot
+      addSnapshot(timestamp, fiatSnapshot)
+    }
+  }
+  
+  // Attach fiat data to transactions
+  return payments.map((transaction) => ({
+    ...transaction,
+    fiatSnapshot: Object.fromEntries(
+      Object.entries(fiatSnapshotForIds[transaction.id]).map(
+        ([fiat, btcPrice]) => [
+          fiat,
+          Number(
+            ((transaction.sats / SATOSHIS_IN_BITCOIN) * btcPrice).toFixed(2)
+          )
+        ]
+      )
+    ) as FiatSnapshot
+  }))
+}
+```
+
+**Optimization Strategy:**
+1. Group transactions by timestamp
+2. Fetch one price snapshot per unique timestamp
+3. Cache snapshots for subsequent fetches
+4. Reuse cached data across pagination
+
+See `~/workspace/source/api/lnbits.ts:318-398`
+
+</Accordion>
+
+<Accordion title="Historical Price Mapping Utility">
+
+The `getHistoricalPricesMap` utility groups transactions efficiently:
+
+```typescript
+export function getHistoricalPricesMap(
+  items: Array<{ id: string; timestamp: number }>
+): Record<string, string[]> {
+  const map: Record<string, string[]> = {}
+  
+  for (const item of items) {
+    const key = String(item.timestamp)
+    
+    if (!map[key]) {
+      map[key] = []
+    }
+    
+    map[key].push(item.id)
+  }
+  
+  return map
+}
+```
+
+**Example Output:**
+```typescript
+{
+  "1709481600000": ["hash1", "hash2", "hash3"],
+  "1709485200000": ["hash4"],
+  "1709488800000": ["hash5", "hash6"]
+}
+```
+
+This groups transactions that occurred at the same time, minimizing API calls.
+
+</Accordion>
+
+## Fiat Snapshot Structure
+
+<Accordion title="Transaction Fiat Data">
+
+Each transaction includes a complete fiat snapshot:
+
+```typescript
+type Transaction = {
+  id: string
+  amount: number  // in satoshis
+  timestamp: number
+  type: 'incoming' | 'outgoing'
+  memo?: string
+  // ... other fields
+  
+  fiatSnapshot: FiatSnapshot
+}
+
+type FiatSnapshot = {
+  usd: number
+  eur: number
+  gbp: number
+  jpy: number
+  cad: number
+  aud: number
+  chf: number
+  // ... all supported currencies
+}
+```
+
+**Example Transaction:**
+```json
+{
+  "id": "abc123...",
+  "amount": 50000,
+  "timestamp": 1709481600000,
+  "type": "incoming",
+  "memo": "Coffee payment",
+  "fiatSnapshot": {
+    "usd": 25.50,
+    "eur": 23.40,
+    "gbp": 20.10,
+    "jpy": 3825.00
+  }
+}
+```
+
+This allows the UI to display any currency without additional API calls.
+
+</Accordion>
+
+## Caching Strategy
+
+<Accordion title="Snapshot Cache">
+
+The wallet maintains a cache of price snapshots to reduce API calls:
+
+```typescript
+const [fiatSnapshots, setFiatSnapshots] = useState<
+  Record<string, FiatSnapshot>
+>({})
+
+function addSnapshot(timestamp: string, snapshot: FiatSnapshot) {
+  setFiatSnapshots(prev => ({
+    ...prev,
+    [timestamp]: snapshot
+  }))
+}
+
+// Pass cache to paginated fetch
+await lnbits.getPaginatedPayments(
+  inkey,
+  { limit: 50, offset: 0 },
+  fiatSnapshots,  // Current cache
+  addSnapshot     // Function to update cache
+)
+```
+
+**Cache Benefits:**
+1. Reduce redundant API calls for same timestamp
+2. Persist across pagination
+3. Instant display for repeated views
+4. Reduced bandwidth usage
+
+</Accordion>
+
+## Precision and Rounding
+
+<Accordion title="Decimal Handling">
+
+All fiat amounts are rounded to 2 decimal places for display:
+
+```typescript
+const fiatAmount = Number(
+  ((sats / SATOSHIS_IN_BITCOIN) * btcPrice).toFixed(2)
+)
+```
+
+**Conversion Chain:**
+1. Convert satoshis to Bitcoin: `sats / 100,000,000`
+2. Multiply by BTC price: `btc * price`
+3. Round to 2 decimals: `toFixed(2)`
+4. Convert back to number: `Number(...)`
+
+**Example:**
+```typescript
+// 50,000 sats at $50,000/BTC
+const sats = 50_000
+const btcPrice = 50_000
+const usd = Number(
+  ((50_000 / 100_000_000) * 50_000).toFixed(2)
+)
+// Result: 25.00
+```
+
+</Accordion>
+
+## Error Handling
+
+<Accordion title="Graceful Degradation">
+
+The wallet handles conversion errors gracefully:
+
+```typescript
+async function convert(sats: number, fiat: SupportedFiatCurrencies) {
+  try {
+    const response = await fetch(`${getCurrentBaseUrl()}/api/v1/conversion`, {
+      headers,
+      method: 'POST',
+      body: JSON.stringify({ from: 'sats', amount: sats, to: fiat })
+    })
+    const json = await response.json()
+    const data = ConversionSchema.parse(json)
+    return data[fiat]
+  } catch (_error) {
+    // Silently fail - UI will show sats only
+  }
+}
+```
+
+**Fallback Behavior:**
+- Always display satoshi amounts
+- Show fiat as optional enhancement
+- Don't block transactions if conversion fails
+- Cache last known rates for offline use
+
+</Accordion>
+
+## Currency Configuration
+
+<Accordion title="Supported Currencies">
+
+The wallet configuration defines supported fiat currencies:
+
+```typescript
+import { SupportedFiatCurrencies } from '@/config/fiat'
+
+// Typical supported currencies:
+type SupportedFiatCurrencies = 
+  | 'usd'
+  | 'eur'
+  | 'gbp'
+  | 'jpy'
+  | 'cad'
+  | 'aud'
+  | 'chf'
+  | 'cny'
+  // ... more currencies
+```
+
+Users can select their preferred currency in settings, which is used throughout the app for displaying fiat amounts.
+
+</Accordion>
+
+## Performance Considerations
+
+1. **Batch API Calls**: Group transactions by timestamp
+2. **Cache Aggressively**: Store price snapshots
+3. **Lazy Loading**: Fetch prices on-demand for visible transactions
+4. **Pagination**: Load transaction history in chunks
+5. **Parallel Requests**: Fetch multiple timestamps concurrently when needed
+6. **Offline Support**: Cache recent rates for offline viewing

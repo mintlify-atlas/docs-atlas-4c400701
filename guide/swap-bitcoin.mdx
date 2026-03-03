@@ -1,0 +1,372 @@
+---
+title: Swap Between On-chain and Lightning
+description: Learn how to swap Bitcoin between on-chain and Lightning Network using Boltz
+---
+
+## Understanding Bitcoin Swaps
+
+Medusa Wallet integrates with Boltz to enable trustless swaps between on-chain Bitcoin and Lightning Network. This allows you to:
+
+- **Fund your Lightning wallet** from on-chain Bitcoin
+- **Withdraw to on-chain** from your Lightning balance
+- **Rebalance** between networks as needed
+
+<Note>
+  Swaps are powered by Boltz, a non-custodial exchange that enables trustless atomic swaps between Bitcoin networks.
+</Note>
+
+## Swap Directions
+
+### On-chain to Lightning (Submarine Swap)
+
+Move Bitcoin from a regular on-chain address into your Lightning wallet.
+
+**Use cases**:
+- Adding funds to start using Lightning
+- Converting long-term storage to spending money
+- Funding Lightning from a hardware wallet
+
+### Lightning to On-chain (Reverse Swap)
+
+Move Bitcoin from your Lightning wallet to an on-chain address.
+
+**Use cases**:
+- Long-term storage (cold wallet)
+- Withdrawing to an exchange
+- Converting Lightning back to on-chain
+- Emptying Lightning channels
+
+## Creating a Swap
+
+<Steps>
+  <Step title="Access Bridge/Swap Screen">
+    From the main menu, navigate to the Bridge or Swap section.
+  </Step>
+
+  <Step title="Select Lightning Wallet">
+    Choose which Lightning wallet will send or receive the funds.
+    
+    <Tip>
+      Your wallet balance is displayed. Ensure you have sufficient funds for Lightning to on-chain swaps.
+    </Tip>
+  </Step>
+
+  <Step title="Choose Direction">
+    Select the swap direction:
+    - **On-chain to Lightning**: You'll send on-chain BTC to receive Lightning sats
+    - **Lightning to On-chain**: You'll send Lightning sats to receive on-chain BTC
+  </Step>
+
+  <Step title="Specify Amount">
+    Enter the swap amount in satoshis.
+    
+    <Warning>
+      Pay attention to the minimum and maximum limits displayed on screen. Swaps outside these limits will fail.
+    </Warning>
+    
+    Amount limits are displayed on the screen:
+    - **Minimum**: Typically a few thousand sats
+    - **Maximum**: Varies based on Boltz liquidity
+  </Step>
+
+  <Step title="Choose Amount Option">
+    Select whether the amount you entered is:
+    - **Send specified amount**: You send exactly this amount (you receive less due to fees)
+    - **Receive specified amount**: You receive exactly this amount (you send more to cover fees)
+    
+    <Note>
+      This determines whether the fees are deducted from what you send or added to what you need to send.
+    </Note>
+  </Step>
+
+  <Step title="Enter On-chain Address">
+    Enter the Bitcoin on-chain address:
+    - **For On-chain → Lightning**: Your refund address (in case swap fails)
+    - **For Lightning → On-chain**: Destination address where you'll receive funds
+    
+    <Warning>
+      Double-check the address! On-chain transactions cannot be reversed. Use copy-paste rather than typing manually.
+    </Warning>
+  </Step>
+
+  <Step title="Create Swap">
+    Review all details and tap "Create Swap".
+    
+    The swap will be created and you'll receive:
+    - On-chain address (for submarine swaps)
+    - QR code for the address
+    - Expected amount after fees
+    - Timeout block height
+  </Step>
+</Steps>
+
+## Completing a Swap
+
+### On-chain to Lightning
+
+<Steps>
+  <Step title="Send On-chain Bitcoin">
+    After creating the swap, you'll see:
+    - A Bitcoin address
+    - QR code
+    - Expected amount to receive
+    
+    Send the exact amount from your on-chain wallet to this address.
+  </Step>
+
+  <Step title="Wait for Confirmations">
+    The swap requires on-chain confirmations:
+    - Usually 1-3 confirmations needed
+    - Monitor progress in swap history
+    - Current block height is displayed
+    
+    <Note>
+      On-chain confirmations take approximately 10 minutes per block.
+    </Note>
+  </Step>
+
+  <Step title="Receive Lightning Sats">
+    Once confirmed:
+    - Lightning sats are automatically credited to your wallet
+    - You'll see a notification
+    - Check your wallet balance to confirm
+  </Step>
+</Steps>
+
+### Lightning to On-chain
+
+<Steps>
+  <Step title="Swap Created and Paid">
+    When you create a Lightning → On-chain swap:
+    - Lightning payment is automatically sent from your wallet
+    - Your Lightning balance decreases immediately
+    - Swap status shows as "pending"
+  </Step>
+
+  <Step title="Wait for On-chain Transaction">
+    Boltz creates the on-chain transaction:
+    - Monitor in swap history
+    - Current block height is displayed
+    - Timeout is shown
+  </Step>
+
+  <Step title="Receive On-chain Bitcoin">
+    Once the on-chain transaction confirms:
+    - Check your destination address
+    - Funds will appear in your on-chain wallet
+    - Swap status updates to "success"
+  </Step>
+</Steps>
+
+## Swap Fees and Limits
+
+### Fee Structure
+
+Boltz charges fees for swaps:
+- **Service Fee**: Small percentage of swap amount
+- **Mining Fees**: On-chain network fees
+- **Total Cost**: Displayed before confirming
+
+<Tip>
+  The expected amount shown includes all fees. What you see is what you get (minus any blockchain variance).
+</Tip>
+
+### Amount Limits
+
+Swaps have minimum and maximum limits:
+- **Minimum**: Usually around 50,000 sats (0.0005 BTC)
+- **Maximum**: Varies based on available liquidity
+- **Check Screen**: Current limits displayed when creating swap
+
+<Warning>
+  Limits change based on network conditions and Boltz liquidity. Always check the current limits on the swap screen.
+</Warning>
+
+## Swap History
+
+View and manage your swaps:
+
+<Steps>
+  <Step title="Access Swap History">
+    From the Bridge screen, tap the History icon to view all swaps.
+  </Step>
+
+  <Step title="View Swap Details">
+    Tap any swap to see:
+    - Swap direction
+    - Amount sent and received
+    - On-chain address
+    - Current status
+    - Timeout block height
+    - Boltz fee
+  </Step>
+
+  <Step title="Monitor Status">
+    Swap statuses:
+    - **Pending**: Waiting for confirmations
+    - **Success**: Completed successfully
+    - **Failed**: Something went wrong (check timeout)
+    - **Refunded**: Returned to original wallet
+  </Step>
+</Steps>
+
+### Current Block Height
+
+The swap history displays:
+- Current Bitcoin block height
+- Timeout for each swap
+- Time remaining (estimated)
+
+<Note>
+  If current block height exceeds timeout and swap is still pending, the swap has timed out and will be refunded.
+</Note>
+
+## Auto Swaps
+
+Medusa Wallet supports automatic reverse swaps (Lightning → On-chain) that trigger when your wallet reaches a certain balance.
+
+### Creating Auto Swap
+
+<Steps>
+  <Step title="Navigate to Auto Swap">
+    From the Bridge menu, select "Auto" tab.
+  </Step>
+
+  <Step title="Configure Auto Swap">
+    Set up your automatic swap:
+    - **Wallet**: Which Lightning wallet to monitor
+    - **Threshold Amount**: Balance that triggers the swap
+    - **Destination Address**: Where to send on-chain Bitcoin
+  </Step>
+
+  <Step title="Enable Auto Swap">
+    Activate the auto swap. When your Lightning wallet reaches the threshold, it will automatically swap to on-chain.
+    
+    <Tip>
+      Use auto swaps to automatically secure profits or manage liquidity by moving excess Lightning balance to cold storage.
+    </Tip>
+  </Step>
+</Steps>
+
+### Managing Auto Swaps
+
+In auto swap history:
+- View all configured auto swaps
+- See how many times each has triggered
+- Delete auto swaps when no longer needed
+- Monitor total amount swapped
+
+## Best Practices
+
+<Tip>
+  **When to Swap to Lightning**:
+  - You need instant payment capability
+  - Making frequent small payments
+  - Want to use Lightning features
+  - On-chain fees are low (cheaper to swap)
+</Tip>
+
+<Tip>
+  **When to Swap to On-chain**:
+  - Long-term storage
+  - Large amounts for security
+  - Sending to services that only accept on-chain
+  - Preparing for potential Lightning channel issues
+</Tip>
+
+<Tip>
+  **Optimizing Costs**:
+  - Swap larger amounts less frequently (better fee efficiency)
+  - Monitor on-chain fees - swap when fees are low
+  - Use "receive amount" option for precise outputs
+  - Consider batching multiple needs into one swap
+</Tip>
+
+## Troubleshooting
+
+### Swap Failed
+
+Common reasons swaps fail:
+
+1. **Insufficient Amount**
+   - Below minimum limit
+   - Not enough for fees
+   - **Solution**: Increase swap amount
+
+2. **Timeout Reached**
+   - On-chain transaction not confirmed in time
+   - Block height exceeded timeout
+   - **Solution**: Funds will be refunded automatically
+
+3. **Invalid Address**
+   - Incorrect address format
+   - Unsupported address type
+   - **Solution**: Use a standard Bitcoin address (P2PKH, P2SH, or Bech32)
+
+4. **Insufficient Lightning Balance**
+   - Not enough sats for Lightning → On-chain
+   - **Solution**: Reduce swap amount or add funds
+
+### Swap Stuck
+
+If a swap appears stuck:
+
+1. **Check Block Height**
+   - Compare current height to timeout
+   - Refresh the swap history
+
+2. **Verify On-chain Transaction**
+   - Use a block explorer to check the address
+   - Confirm transaction was sent (for submarine swaps)
+
+3. **Wait for Confirmations**
+   - On-chain requires time
+   - Each block is ~10 minutes
+
+4. **Contact Support**
+   - If timeout exceeded and no refund
+   - Provide swap ID from history
+
+### Refund Not Received
+
+<Warning>
+  If a swap times out, refunds are automatic but require on-chain confirmations:
+  - Allow 1-6 confirmations
+  - Check your refund address
+  - Wait up to 1 hour
+  - Contact support if still not received
+</Warning>
+
+## Technical Details
+
+### Submarine Swaps (On-chain → Lightning)
+
+1. You create swap and receive an address
+2. You send on-chain BTC to that address
+3. Boltz waits for confirmations
+4. Boltz pays your Lightning invoice
+5. Boltz claims your on-chain payment
+
+### Reverse Swaps (Lightning → On-chain)
+
+1. You create swap with destination address
+2. Boltz creates on-chain transaction
+3. You pay Boltz Lightning invoice
+4. Boltz broadcasts on-chain transaction
+5. You receive on-chain BTC after confirmations
+
+### Trustless Nature
+
+<Note>
+  Swaps use Hash Time-Locked Contracts (HTLCs):
+  - No party can steal funds
+  - Either swap completes or refunds
+  - Timeout protection for both sides
+  - No custody of your funds
+</Note>
+
+## Next Steps
+
+- [Learn about sending and receiving](/guide/send-receive) Lightning payments
+- [Manage multiple wallets](/guide/create-wallet) for different purposes
+- [Use your Lightning address](/guide/lightning-address) for easy receiving

@@ -1,0 +1,100 @@
+---
+title: Introduction to Medusa Wallet
+description: Your Lightning wallet with zero KYC - create wallets, send and receive Bitcoin instantly, and buy sats with your credit card
+---
+
+# Your Lightning wallet with zero KYC
+
+Medusa Wallet is a mobile Lightning Network wallet built with React Native and Expo, designed to provide instant Bitcoin payments without any KYC requirements. Create your wallet with just a username and email - no identity verification needed.
+
+<CardGroup cols={2}>
+  <Card title="Lightning fast payments" icon="bolt">
+    Send and receive Bitcoin instantly over the Lightning Network with minimal fees
+  </Card>
+  <Card title="Zero KYC required" icon="user-shield">
+    Create your account with just a username and email - even throwaway emails work
+  </Card>
+  <Card title="Buy sats with credit card" icon="credit-card">
+    Purchase Bitcoin directly in the app using your credit card without identity verification
+  </Card>
+  <Card title="Multiple wallets" icon="wallet">
+    Organize your funds by creating multiple Lightning wallets within your account
+  </Card>
+  <Card title="Swap between LN and onchain" icon="arrows-rotate">
+    Bridge your funds between Lightning Network and Bitcoin onchain using Boltz swaps
+  </Card>
+  <Card title="Biometric security" icon="fingerprint">
+    Protect your wallet with PIN codes and biometric authentication (Face ID/Touch ID)
+  </Card>
+</CardGroup>
+
+## Key features
+
+### Lightning Network payments
+
+Medusa Wallet provides a full-featured Lightning Network experience:
+
+- Create Lightning invoices with custom amounts and memos
+- Pay Lightning invoices by scanning QR codes
+- Lightning address support (username@wallet.medusa.bz)
+- Real-time payment notifications via WebSocket
+- Complete transaction history with fiat conversion values
+
+### Multi-wallet management
+
+Organize your Bitcoin across multiple wallets:
+
+```typescript
+// Create a new wallet
+await lnbits.createWallet('Savings', adminkey)
+
+// Each wallet has its own balance and transaction history
+```
+
+### Privacy focused
+
+No KYC means your privacy is protected. You can even register with a throwaway email address:
+
+<Info>
+  The app stores sensitive data securely using Expo Secure Store and never shares your information with third parties.
+</Info>
+
+### Buy Bitcoin instantly
+
+Purchase sats directly in the app using vouchers - no identity verification required.
+
+### Lightning to onchain swaps
+
+Use Boltz integration to swap between Lightning Network and Bitcoin onchain:
+
+- Lightning to onchain (reverse swaps)
+- Onchain to Lightning (submarine swaps)  
+- Auto swaps for automatic fund management
+- Transparent fee calculation
+
+<Tip>
+  Swaps are non-custodial and use atomic swap technology to ensure your funds are always secure.
+</Tip>
+
+## Built with modern technology
+
+Medusa Wallet is built using cutting-edge mobile development technologies:
+
+- **React Native 0.79** - Cross-platform mobile framework
+- **Expo SDK 53** - Simplified React Native development
+- **TypeScript** - Type-safe code
+- **Zustand** - Lightweight state management
+- **React Query** - Efficient data fetching and caching
+- **LNbits backend** - Open-source Lightning wallet server
+
+## Multi-language support
+
+Currently available in:
+- English
+- Portuguese
+
+With easy extensibility for additional languages through the i18n system.
+
+## Get started
+
+Ready to get started? Check out the [Quickstart](/quickstart) guide to create your first wallet, or jump to [Installation](/installation) to download the app.

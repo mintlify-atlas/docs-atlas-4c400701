@@ -1,0 +1,199 @@
+---
+title: 'Wallet Components'
+description: 'Components for wallet management and display in Medusa Wallet'
+---
+
+## MWalletCard
+
+A card component that displays wallet information including balance, fiat value, and latest transaction time.
+
+### Props
+
+<ParamField path="name" type="string" required>
+  The name of the wallet
+</ParamField>
+
+<ParamField path="sats" type="number" required>
+  Wallet balance in satoshis
+</ParamField>
+
+<ParamField path="fiat" type="SupportedFiatCurrencies" required>
+  The fiat currency to display (e.g., 'USD', 'EUR')
+</ParamField>
+
+<ParamField path="fiatAmount" type="string | number" required>
+  The fiat equivalent of the wallet balance
+</ParamField>
+
+<ParamField path="latestTransaction" type="number" required>
+  Unix timestamp of the latest transaction
+</ParamField>
+
+<ParamField path="color" type="WalletCardColor | undefined" required>
+  Gradient color configuration for the card background
+</ParamField>
+
+<ParamField path="onPress" type="() => void" required>
+  Callback function when the card is pressed
+</ParamField>
+
+### Usage
+
+```tsx
+import MWalletCard from '@/components/MWalletCard'
+import { WALLET_CARD_COLORS } from '@/config/colors'
+
+<MWalletCard
+  name="My Lightning Wallet"
+  sats={1500000}
+  fiat="USD"
+  fiatAmount="450.00"
+  latestTransaction={1709481600000}
+  color={WALLET_CARD_COLORS[0]}
+  onPress={() => navigation.navigate('WalletDetails')}
+/>
+```
+
+### Features
+
+- Gradient background with customizable colors
+- Displays balance in user's preferred Bitcoin unit (sats/BTC)
+- Shows fiat equivalent with currency symbol
+- Relative time display for latest transaction
+- Watermark Medusa logo
+- Touch feedback with highlight effect
+
+<Accordion title="Detailed Implementation">
+The component uses:
+- `LinearGradient` from `expo-linear-gradient` for background
+- `useFormatBitcoinUnit` hook for balance formatting
+- `MTimeAgoText` for relative time display
+- `TouchableHighlight` for press interactions
+- Fixed width of 240px for consistent card sizing
+</Accordion>
+
+---
+
+## MNewWalletButton
+
+A button component for creating new wallets with a dashed border style.
+
+### Props
+
+<ParamField path="onPress" type="() => void" required>
+  Callback function when the button is pressed
+</ParamField>
+
+### Usage
+
+```tsx
+import MNewWalletButton from '@/components/MNewWalletButton'
+
+<MNewWalletButton 
+  onPress={() => navigation.navigate('CreateWallet')} 
+/>
+```
+
+### Features
+
+- Dashed border with bitcoin-colored outline
+- Plus circle icon centered
+- Matches MWalletCard dimensions (240px width)
+- Internationalized "New Wallet" text
+- Full height fill for consistent layout
+
+<Accordion title="Visual Style">
+The component features:
+- Dashed border style for distinction from regular cards
+- `Colors.bitcoin` border color
+- Centered content layout
+- Icon and text vertical stack
+</Accordion>
+
+---
+
+## MSettingsCard
+
+A compound component for creating settings sections with items and labels.
+
+### Main Component Props
+
+<ParamField path="title" type="string" required>
+  The title of the settings section
+</ParamField>
+
+<ParamField path="children" type="React.ReactNode" required>
+  Child components (typically `MSettingsCard.Item`)
+</ParamField>
+
+### MSettingsCard.Item Props
+
+<ParamField path="reverse" type="boolean" default="false">
+  Reverse the layout order of children
+</ParamField>
+
+<ParamField path="onPress" type="() => void">
+  Callback function when the item is pressed
+</ParamField>
+
+<ParamField path="children" type="React.ReactNode" required>
+  Content to display in the item (typically `MSettingsCard.Label`)
+</ParamField>
+
+### MSettingsCard.Label Props
+
+<ParamField path="title" type="string" required>
+  The label title
+</ParamField>
+
+<ParamField path="value" type="string" required>
+  The label value
+</ParamField>
+
+<ParamField path="muted" type="boolean">
+  Whether to display the value in muted color
+</ParamField>
+
+### Usage
+
+```tsx
+import MSettingsCard from '@/components/MSettingsCard'
+import MSwitch from '@/components/MSwitch'
+
+<MSettingsCard title="Display Settings">
+  <MSettingsCard.Item reverse>
+    <MSettingsCard.Label 
+      title="Fiat Currency" 
+      value="USD" 
+    />
+    <MSwitch value={enabled} onValueChange={setEnabled} />
+  </MSettingsCard.Item>
+  <MSettingsCard.Item onPress={() => openCurrencyPicker()}>
+    <MSettingsCard.Label 
+      title="Bitcoin Unit" 
+      value="sats" 
+    />
+  </MSettingsCard.Item>
+</MSettingsCard>
+```
+
+### Features
+
+- Compound component pattern for flexible composition
+- Automatic rounded corners on first/last items
+- Border separators between items
+- Support for reverse layouts
+- Consistent padding and spacing
+
+<Accordion title="Component Architecture">
+The component uses Object.assign to create a compound component:
+
+```typescript
+const MSettingsCard = Object.assign(memo(SettingsCard), {
+  Item: SettingsCardItem,
+  Label: SettingsCardLabel
+})
+```
+
+This allows for clean, hierarchical JSX while maintaining type safety.
+</Accordion>

@@ -1,0 +1,238 @@
+---
+title: Development Environment Setup
+description: Set up your local development environment for Medusa Wallet
+---
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed on your system:
+
+<CardGroup cols={3}>
+  <Card title="Node.js" icon="node-js">
+    Latest LTS version recommended
+  </Card>
+  <Card title="Package Manager" icon="box">
+    pnpm, npm, or yarn
+  </Card>
+  <Card title="Mobile Development" icon="mobile">
+    Android Studio or Xcode
+  </Card>
+</CardGroup>
+
+<Note>
+  Medusa Wallet uses **pnpm@9.3.0** as the default package manager. While npm and yarn will work, pnpm is recommended for consistency with the project.
+</Note>
+
+## Installation
+
+<Steps>
+  <Step title="Clone the repository">
+    Clone the Medusa Wallet repository to your local machine:
+
+    ```bash
+    git clone https://github.com/Psycarlo/medusa-wallet.git
+    cd medusa-wallet
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    Install the project dependencies using your preferred package manager:
+
+    <CodeGroup>
+      ```bash pnpm
+      pnpm install
+      ```
+
+      ```bash npm
+      npm install
+      ```
+
+      ```bash yarn
+      yarn install
+      ```
+    </CodeGroup>
+
+    <Info>
+      The project uses Expo SDK 53 and React Native 0.79.5. All dependencies will be automatically installed.
+    </Info>
+  </Step>
+
+  <Step title="Platform-specific setup">
+    Set up your development environment for your target platform:
+
+    <Tabs>
+      <Tab title="iOS">
+        <Warning>
+          iOS development requires a macOS machine with Xcode installed.
+        </Warning>
+
+        1. Install Xcode from the Mac App Store
+        2. Install Xcode Command Line Tools:
+           ```bash
+           xcode-select --install
+           ```
+        3. Install iOS Simulator (included with Xcode)
+        4. Install CocoaPods dependencies:
+           ```bash
+           cd ios
+           pod install
+           cd ..
+           ```
+      </Tab>
+
+      <Tab title="Android">
+        1. Install [Android Studio](https://developer.android.com/studio)
+        2. Install Android SDK (API level 33 or higher)
+        3. Set up Android environment variables:
+           ```bash
+           export ANDROID_HOME=$HOME/Library/Android/sdk
+           export PATH=$PATH:$ANDROID_HOME/emulator
+           export PATH=$PATH:$ANDROID_HOME/platform-tools
+           ```
+        4. Create an Android Virtual Device (AVD) using Android Studio
+
+        <Note>
+          The app requires **CAMERA** permission which is configured in `app.json`.
+        </Note>
+      </Tab>
+    </Tabs>
+  </Step>
+
+  <Step title="Configure environment">
+    Create a `.env` file in the root directory if needed for any custom configurations:
+
+    ```bash
+    # Add any environment-specific variables here
+    ```
+
+    <Info>
+      Most API configurations are already set up in the codebase. Check `/api` directory for API endpoints.
+    </Info>
+  </Step>
+</Steps>
+
+## Development Tools
+
+Medusa Wallet includes several development tools to enhance your workflow:
+
+### React Query DevTools
+
+The app includes React Query DevTools for debugging API requests and cache management:
+
+```typescript
+import { useReactQueryDevTools } from '@dev-plugins/react-query'
+
+const queryClient = new QueryClient()
+useReactQueryDevTools(queryClient)
+```
+
+<Tip>
+  Read more about React Query DevTools in the [Expo documentation](https://docs.expo.dev/debugging/devtools-plugins/#react-query).
+</Tip>
+
+### Linting and Formatting
+
+The project uses ESLint and Prettier for code quality:
+
+<CodeGroup>
+  ```bash Check formatting
+  pnpm format
+  ```
+
+  ```bash Fix formatting
+  pnpm format:fix
+  ```
+
+  ```bash Lint code
+  pnpm lint
+  ```
+
+  ```bash Type check
+  pnpm type-check
+  ```
+</CodeGroup>
+
+### Testing
+
+Run the test suite to ensure everything is working correctly:
+
+<CodeGroup>
+  ```bash All tests
+  pnpm test
+  ```
+
+  ```bash Unit tests
+  pnpm test:unit
+  ```
+
+  ```bash Integration tests
+  pnpm test:int
+  ```
+</CodeGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Metro bundler port conflict">
+    If you encounter port conflicts, the app uses port **8082** by default:
+
+    ```bash
+    pnpm android --port 8082
+    ```
+
+    You can change this in `package.json` under the `android` script.
+  </Accordion>
+
+  <Accordion title="Dependency installation issues">
+    If you encounter issues with dependencies:
+
+    1. Clear the package manager cache:
+       ```bash
+       pnpm store prune
+       ```
+    2. Delete `node_modules` and reinstall:
+       ```bash
+       rm -rf node_modules
+       pnpm install
+       ```
+  </Accordion>
+
+  <Accordion title="iOS build fails">
+    If iOS builds fail:
+
+    1. Clean the build folder in Xcode
+    2. Reinstall CocoaPods:
+       ```bash
+       cd ios
+       rm -rf Pods Podfile.lock
+       pod install
+       cd ..
+       ```
+  </Accordion>
+
+  <Accordion title="Android emulator not detected">
+    Ensure your Android emulator is running:
+
+    ```bash
+    # List available devices
+    adb devices
+
+    # If no devices, start an emulator from Android Studio
+    # or use the command line:
+    emulator -avd <avd_name>
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+Once your environment is set up, you can:
+
+<CardGroup cols={2}>
+  <Card title="Learn the Architecture" icon="sitemap" href="/development/architecture">
+    Understand how Medusa Wallet is structured
+  </Card>
+  <Card title="Build and Run" icon="rocket" href="/development/building">
+    Start developing and testing the app
+  </Card>
+</CardGroup>

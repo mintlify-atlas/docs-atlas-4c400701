@@ -1,0 +1,284 @@
+---
+title: 'Lightning Network Payments'
+description: 'Send and receive instant Bitcoin payments using BOLT11 invoices and LNURL protocol'
+---
+
+## Overview
+
+Medusa Wallet provides a seamless experience for sending and receiving Lightning Network payments. Whether you're paying a BOLT11 invoice, sending to an LNURL, or receiving payments through your personal paylink, Medusa makes Lightning transactions fast and intuitive.
+
+<Info>
+  Lightning Network enables near-instant Bitcoin transactions with minimal fees, typically under 1 satoshi.
+</Info>
+
+## Payment Types
+
+Medusa supports multiple Lightning payment standards:
+
+<CardGroup cols={2}>
+  <Card title="BOLT11 Invoices" icon="bolt">
+    Standard Lightning invoices starting with 'lnbc' for one-time payments
+  </Card>
+  <Card title="LNURL-Pay" icon="link">
+    Reusable payment links that allow flexible amounts and metadata
+  </Card>
+  <Card title="Lightning Address" icon="at">
+    Email-like addresses (user@domain.com) for easy receiving
+  </Card>
+  <Card title="Paylinks" icon="qrcode">
+    Your personal payment link for receiving from anyone
+  </Card>
+</CardGroup>
+
+## Receiving Payments
+
+### Creating an Invoice
+
+Generate a Lightning invoice to receive a specific amount:
+
+1. Select the wallet you want to receive funds into
+2. Tap the "Receive" button
+3. Enter the amount you want to receive (in sats, BTC, or fiat)
+4. Optionally add a description/memo for the payment
+5. Share the generated QR code or copy the invoice string
+
+The invoice is valid until paid or expired.
+
+<Note>
+  Invoices include the payment amount, destination, and optional metadata like descriptions.
+</Note>
+
+### Using Your Paylink
+
+Every Medusa account comes with a personal LNURL paylink:
+
+- **Reusable**: Share once, receive multiple payments
+- **Flexible Amounts**: Payers can choose amounts within your configured range
+- **Comments Supported**: Receive messages with payments (up to configured character limit)
+- **Always Available**: Your paylink never expires
+
+**Paylink Configuration:**
+- Minimum: Configurable (default based on network minimums)
+- Maximum: Configurable (default limits apply)
+- Comment Length: Customizable character limit for payment messages
+
+#### Sharing Your Paylink
+
+1. Navigate to your wallet's receive screen
+2. Select "Paylink" or "LNURL" option
+3. Share the QR code or copy the LNURL string
+4. Recipients can scan or paste to send you payments
+
+### Real-time Payment Notifications
+
+Medusa uses WebSocket connections to provide instant payment notifications:
+
+- Payments appear immediately upon confirmation
+- Balance updates in real-time
+- Transaction list refreshes automatically
+- Visual and haptic feedback for successful receipts
+
+## Sending Payments
+
+### Scanning QR Codes
+
+The fastest way to pay is by scanning:
+
+1. Tap the "Send" or "Scan" button
+2. Point your camera at the payment QR code
+3. Review the payment details (amount, destination, memo)
+4. Confirm the payment
+5. Payment is sent instantly
+
+<Info>
+  Medusa's QR scanner automatically detects BOLT11 invoices, LNURL-Pay links, Lightning addresses, and Bitcoin addresses.
+</Info>
+
+### Pasting Payment Strings
+
+If you have a copied invoice or payment link:
+
+1. Tap the "Send" button
+2. Paste the invoice string or LNURL
+3. Review the decoded payment information
+4. Confirm to complete the payment
+
+### LNURL-Pay Workflow
+
+When paying an LNURL:
+
+1. Scan or paste the LNURL
+2. Medusa fetches payment parameters (min/max amounts, metadata)
+3. Enter the amount you want to send (within allowed range)
+4. Optionally add a comment if supported
+5. Confirm the payment
+6. Medusa completes the LNURL protocol exchange automatically
+
+## Transaction Details
+
+Each transaction in Medusa includes:
+
+### Transaction Information
+
+- **Amount**: Payment amount in your preferred unit
+- **Type**: Incoming or outgoing payment indicator
+- **Timestamp**: When the payment was completed
+- **Description**: Payment memo or description
+- **Payment Hash**: Unique transaction identifier
+- **Fee**: Network routing fee (for outgoing payments)
+
+### Historical Fiat Values
+
+Medusa tracks the fiat value at the time of each transaction:
+
+- **Snapshot Price**: Bitcoin price when payment was made
+- **Current Value**: What the same amount is worth now
+- **Percentage Change**: Gain or loss since transaction
+- **Multiple Currencies**: Track values in your preferred fiat currencies
+
+<Note>
+  Historical price data helps you understand the real-world value of payments over time.
+</Note>
+
+## Payment Monitoring
+
+### WebSocket Subscriptions
+
+Medusa monitors payments using two WebSocket types:
+
+1. **Payment Hash Subscription**: Tracks specific invoice payments until confirmed
+2. **Inkey Subscription**: Monitors all incoming payments to a wallet in real-time
+
+These connections ensure you're always aware of payment status without manual refreshing.
+
+### Payment Status
+
+Payments can have several states:
+
+- **Pending**: Payment initiated but not yet confirmed
+- **Success**: Payment completed successfully
+- **Failed**: Payment could not be completed (automatically refunded)
+
+## Transaction History
+
+### Viewing Transactions
+
+Access your complete payment history:
+
+1. Select a wallet
+2. Scroll through the transaction list
+3. Tap any transaction for full details
+
+Transactions are sorted by date (newest first) and paginated for performance.
+
+### Pagination
+
+For wallets with many transactions:
+
+- Initial load: First 40 transactions
+- Scroll to bottom: Automatically loads next batch
+- Efficient loading: Only fetches what you need to see
+
+### Transaction Filtering
+
+Medusa loads only successful transactions by default, filtering out:
+
+- Failed payment attempts
+- Expired invoices
+- Pending transactions that timed out
+
+## Currency Conversion
+
+Medusa provides real-time currency conversion:
+
+### Supported Bitcoin Units
+
+- **BTC**: Standard Bitcoin unit
+- **Satoshis (sats)**: Smallest unit (0.00000001 BTC)
+- **mBTC**: Millibitcoin (0.001 BTC)
+
+### Fiat Currencies
+
+Convert to major fiat currencies:
+- USD, EUR, GBP, JPY, and more
+- Real-time exchange rates
+- Historical rates for past transactions
+
+<Info>
+  You can change your preferred display units and fiat currency in Settings.
+</Info>
+
+## Security Features
+
+### Payment Confirmation
+
+All outgoing payments require explicit user confirmation:
+
+- Review amount, destination, and fees
+- No automatic payments without approval
+- Clear visual indicators before sending
+
+### Amount Validation
+
+Medusa validates all payment amounts:
+
+- Insufficient balance checks
+- Minimum/maximum amount enforcement
+- Fee calculation and display
+
+### Error Handling
+
+Robust error handling ensures:
+
+- Failed payments don't deduct funds
+- Clear error messages for troubleshooting
+- Automatic retry logic for network issues
+
+## Best Practices
+
+### For Receiving
+
+1. **Use Paylinks for Recurring**: Share your paylink for tips, donations, or regular payments
+2. **Specific Invoices for Exact Amounts**: Create invoices when you need a precise payment
+3. **Add Descriptions**: Help payers and yourself identify payment purposes
+
+### For Sending
+
+1. **Verify Amounts**: Double-check payment amounts before confirming
+2. **Check Descriptions**: Ensure you're paying the right invoice
+3. **Monitor Balances**: Keep sufficient balance for payments and routing fees
+
+### General Tips
+
+- Lightning payments are final - verify before confirming
+- Keep invoices valid by paying promptly
+- Use camera permissions for easy QR scanning
+- Save important payment details or screenshots
+
+## Technical Details
+
+### Payment Protocol Support
+
+- **BOLT11**: Standard Lightning invoice format
+- **LNURL-Pay**: LUD-06 specification compliant
+- **Lightning Address**: LUD-16 compatible
+
+### API Integration
+
+Payments are processed through:
+
+- LNbits payment API endpoints
+- WebSocket connections for real-time updates
+- Secure key-based authentication
+- Automatic error recovery
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Wallet Management" icon="wallet" href="/features/wallets">
+    Learn about managing multiple wallets
+  </Card>
+  <Card title="Bitcoin Swaps" icon="repeat" href="/features/swaps">
+    Convert Lightning to on-chain Bitcoin
+  </Card>
+</CardGroup>

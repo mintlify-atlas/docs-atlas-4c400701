@@ -1,0 +1,416 @@
+---
+title: App Architecture Overview
+description: Understanding the structure and architecture of Medusa Wallet
+---
+
+## Project Structure
+
+Medusa Wallet follows a modern React Native architecture using Expo Router for navigation and Zustand for state management.
+
+```
+medusa-wallet/
+├── app/                    # Expo Router file-based routing
+├── api/                    # API integration layer
+├── assets/                 # Images, fonts, and icons
+├── components/             # Reusable React components
+├── config/                 # Configuration files
+├── constants/              # App constants
+├── hooks/                  # Custom React hooks
+├── layouts/                # Layout components
+├── locales/                # Internationalization
+├── schemas/                # Zod validation schemas
+├── storage/                # Storage utilities (MMKV, Secure Store)
+├── store/                  # Zustand state management
+├── styles/                 # Shared styles and themes
+├── types/                  # TypeScript type definitions
+├── utils/                  # Utility functions
+└── tests/                  # Unit and integration tests
+```
+
+## Core Technologies
+
+<CardGroup cols={2}>
+  <Card title="Expo SDK 53" icon="mobile">
+    Modern React Native framework
+  </Card>
+  <Card title="React Native 0.79.5" icon="react">
+    Latest React Native runtime
+  </Card>
+  <Card title="TypeScript 5.8" icon="code">
+    Type-safe development
+  </Card>
+  <Card title="Expo Router 5" icon="route">
+    File-based navigation
+  </Card>
+</CardGroup>
+
+## Navigation Structure
+
+Medusa Wallet uses **Expo Router** with file-based routing. The navigation hierarchy is organized as follows:
+
+### Route Groups
+
+<AccordionGroup>
+  <Accordion title="Root Routes">
+    Authentication and onboarding flows:
+
+    ```
+    app/
+    ├── _layout.tsx           # Root layout with providers
+    ├── intro.tsx             # Onboarding screen
+    ├── signin.tsx            # Sign in screen
+    ├── signup.tsx            # Sign up screen
+    └── unlock.tsx            # PIN unlock screen
+    ```
+  </Accordion>
+
+  <Accordion title="(authenticated) - Protected Routes">
+    Main app screens requiring authentication:
+
+    ```
+    app/(authenticated)/
+    ├── (tabs)/               # Bottom tab navigation
+    │   ├── index.tsx         # Home/Wallet screen
+    │   ├── buy.tsx           # Buy Bitcoin screen
+    │   └── (bridge)/         # Bridge feature group
+    │       ├── index.tsx     # Bridge screen
+    │       └── auto.tsx      # Auto-bridge screen
+    ├── (plain)/              # Stack navigation
+    │   ├── send.tsx          # Send transaction
+    │   ├── receive.tsx       # Receive screen
+    │   ├── settings.tsx      # App settings
+    │   ├── swaps.tsx         # Swap functionality
+    │   ├── camera.tsx        # QR scanner
+    │   └── wallet/[id]/      # Dynamic wallet routes
+    └── (modals)/             # Modal screens
+        ├── newWallet.tsx     # Create wallet modal
+        ├── newPin.tsx        # Set PIN modal
+        ├── confirmPin.tsx    # Confirm PIN modal
+        └── validatePin.tsx   # Validate PIN modal
+    ```
+
+    <Info>
+      Route groups in parentheses like `(authenticated)` don't appear in the URL structure.
+    </Info>
+  </Accordion>
+
+  <Accordion title="(modals) - Modal Routes">
+    Shared modal screens:
+
+    ```
+    app/(modals)/
+    ├── empty.tsx             # Empty state modal
+    └── privacy.tsx           # Privacy policy modal
+    ```
+  </Accordion>
+</AccordionGroup>
+
+### Dynamic Routes
+
+The app uses dynamic routing for wallet-specific screens:
+
+```typescript
+// Access wallet by ID
+app/(authenticated)/(plain)/wallet/[id]/index.tsx
+
+// Access wallet settings
+app/(authenticated)/(plain)/wallet/[id]/settings/index.tsx
+
+// Access transaction details
+app/(authenticated)/(plain)/wallet/[id]/transaction/[tid]/index.tsx
+```
+
+<Tip>
+  Learn more about Expo Router in the [official documentation](https://docs.expo.dev/router/introduction/).
+</Tip>
+
+## State Management
+
+Medusa Wallet uses **Zustand** with persistence for state management:
+
+### Store Structure
+
+```
+store/
+├── auth.ts                 # Authentication state
+├── wallets.ts              # Wallet management
+├── settings.ts             # App settings
+├── fiat.ts                 # Fiat currency preferences
+└── version.ts              # App version tracking
+```
+
+### Authentication Store
+
+Manages user authentication and PIN security:
+
+```typescript
+// store/auth.ts
+type AuthState = {
+  firstTime: boolean
+  loggedOut: boolean
+  username: string
+  email: string
+  accessToken: string
+  pinRetries: number
+  authTriggered: boolean
+}
+```
+
+<Note>
+  PINs are stored securely using Expo Secure Store, not in the Zustand state.
+</Note>
+
+### Wallets Store
+
+Manages wallet data, balances, and transactions:
+
+```typescript
+// store/wallets.ts
+type WalletsState = {
+  wallets: Wallet[]
+  walletColors: Record<string, WalletCardColor>
+  selectedWalletId: string | null
+  totalBalance: number
+  totalFiat: number
+  paylink?: Paylink
+}
+```
+
+Key actions:
+- `setWallets()` - Update wallet list
+- `addWallet()` - Add new wallet
+- `updateWalletName()` - Rename wallet
+- `deleteWallet()` - Remove wallet
+- `setTransactions()` - Update transaction history
+
+### Persistence
+
+All stores use **MMKV** for fast, persistent storage:
+
+```typescript
+import { create } from 'zustand'
+import { createJSONStorage, persist } from 'zustand/middleware'
+import mmkvStorage from '@/storage/mmkv'
+
+const useStore = create(
+  persist(
+    (set) => ({ /* state */ }),
+    {
+      name: 'medusa-store-name',
+      storage: createJSONStorage(() => mmkvStorage)
+    }
+  )
+)
+```
+
+## API Integration
+
+API integrations are organized in the `/api` directory:
+
+```
+api/
+├── medusa.ts               # Medusa API (price data)
+├── mempool.ts              # Mempool.space (blockchain data)
+├── lnbits.ts               # LNbits (Lightning wallet)
+├── lnaddress.ts            # Lightning Address
+├── maxfy.ts                # Maxfy integration
+└── github.ts               # GitHub API (updates)
+```
+
+### Data Fetching
+
+The app uses **TanStack Query (React Query)** for data fetching:
+
+```typescript
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+
+const queryClient = new QueryClient()
+
+// In component
+const { data, isLoading } = useQuery({
+  queryKey: ['wallet-balance'],
+  queryFn: fetchBalance
+})
+```
+
+### API Example: Medusa API
+
+Price data fetching from Medusa API:
+
+```typescript
+// api/medusa.ts
+const API_URL = 'https://api.medusa.bz/v1'
+
+async function getBitcoinPricesAt(timestamp: number) {
+  const response = await fetch(
+    `${API_URL}/btcPriceAll?unix_time=${timestamp}`,
+    { headers, method: 'GET' }
+  )
+  return await response.json()
+}
+```
+
+## Storage Layer
+
+Two storage mechanisms are used:
+
+### MMKV Storage
+
+Fast, persistent key-value storage for non-sensitive data:
+
+```typescript
+// storage/mmkv.ts
+import { MMKV } from 'react-native-mmkv'
+
+const storage = new MMKV()
+
+export default {
+  getItem: (key: string) => storage.getString(key),
+  setItem: (key: string, value: string) => storage.set(key, value),
+  removeItem: (key: string) => storage.delete(key)
+}
+```
+
+### Secure Store
+
+Encrypted storage for sensitive data like PINs:
+
+```typescript
+// storage/encrypted.ts
+import * as SecureStore from 'expo-secure-store'
+
+export async function setItem(key: string, value: string) {
+  await SecureStore.setItemAsync(key, value)
+}
+
+export async function getItem(key: string) {
+  return await SecureStore.getItemAsync(key)
+}
+```
+
+## Type Safety
+
+Medusa Wallet uses **Zod** for runtime type validation:
+
+```
+schemas/
+├── medusa.ts               # Medusa API schemas
+├── mempool.ts              # Mempool API schemas
+├── lnbits.ts               # LNbits schemas
+├── lnaddress.ts            # Lightning Address schemas
+└── maxfy.ts                # Maxfy schemas
+```
+
+Example schema:
+
+```typescript
+import { z } from 'zod'
+
+export const TimestampPriceSchema = z.object({
+  bitcoin: z.record(z.number())
+})
+
+type TimestampPrice = z.infer<typeof TimestampPriceSchema>
+```
+
+## UI Components
+
+The app uses custom components and layouts:
+
+### Layout Components
+
+```
+layouts/
+├── MMainLayout.tsx         # Main screen layout
+├── MFormLayout.tsx         # Form layout
+├── MPinLayout.tsx          # PIN entry layout
+├── MCenter.tsx             # Centered content
+├── MHStack.tsx             # Horizontal stack
+└── MVStack.tsx             # Vertical stack
+```
+
+### Component Libraries
+
+- **@gorhom/bottom-sheet** - Bottom sheet modals
+- **@shopify/flash-list** - Performant lists
+- **sonner-native** - Toast notifications
+- **react-native-svg** - SVG rendering
+- **expo-image** - Optimized image component
+
+## Styling
+
+Centralized styling system:
+
+```
+styles/
+├── index.ts                # Style exports
+├── colors.ts               # Color palette
+├── typography.ts           # Font styles
+├── sizes.ts                # Spacing and sizes
+└── layout.ts               # Layout utilities
+```
+
+Example usage:
+
+```typescript
+import { Colors, Typography, Sizes } from '@/styles'
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: Colors.dark,
+    padding: Sizes.md
+  },
+  text: {
+    ...Typography.body,
+    color: Colors.textPrimary
+  }
+})
+```
+
+## Testing Strategy
+
+The app includes unit and integration tests:
+
+```
+tests/
+├── unit/                   # Unit tests
+│   └── utils/              # Utility function tests
+└── int/                    # Integration tests
+    └── api/                # API integration tests
+```
+
+Run tests with:
+
+```bash
+# All tests
+pnpm test
+
+# Unit tests only
+pnpm test:unit
+
+# Integration tests only
+pnpm test:int
+```
+
+## Configuration Files
+
+<CardGroup cols={2}>
+  <Card title="app.json" icon="gear">
+    Expo configuration, plugins, and app metadata
+  </Card>
+  <Card title="package.json" icon="box">
+    Dependencies and scripts
+  </Card>
+  <Card title="tsconfig.json" icon="code">
+    TypeScript compiler options
+  </Card>
+  <Card title="metro.config.js" icon="shuffle">
+    Metro bundler configuration
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<Card title="Building and Running" icon="rocket" href="/development/building">
+  Learn how to build and run the app on different platforms
+</Card>

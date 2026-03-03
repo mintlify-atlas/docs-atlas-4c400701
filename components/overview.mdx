@@ -1,0 +1,105 @@
+---
+title: 'Component Library'
+description: 'Overview of Medusa Wallet UI components built with React Native'
+---
+
+## Introduction
+
+Medusa Wallet provides a comprehensive library of React Native components designed specifically for Bitcoin Lightning wallet applications. All components follow a consistent design system with dark theme support and responsive layouts.
+
+## Component Categories
+
+The component library is organized into several categories:
+
+<CardGroup cols={2}>
+  <Card title="Wallet Components" icon="wallet" href="/components/wallet-components">
+    Components for displaying wallet information, creating wallets, and managing wallet cards
+  </Card>
+  <Card title="Payment Components" icon="credit-card" href="/components/payment-components">
+    Components for transactions, QR codes, amount displays, and payment flows
+  </Card>
+</CardGroup>
+
+## Design Principles
+
+### Consistent Styling
+
+All components use the centralized `Colors` and `Typography` system:
+
+```typescript
+import { Colors, Typography } from '@/styles'
+```
+
+Key colors include:
+- `Colors.dark` - Main background
+- `Colors.grayDarkest` - Card backgrounds
+- `Colors.grayDarker` - Input backgrounds
+- `Colors.bitcoin` - Primary action color
+- `Colors.white` - Primary text color
+
+### Layout Components
+
+Components utilize the layout system for consistent spacing:
+
+```typescript
+import MHStack from '@/layouts/MHStack'
+import MVStack from '@/layouts/MVStack'
+```
+
+- `MVStack` - Vertical stack with gap control
+- `MHStack` - Horizontal stack with gap control
+
+### Typography
+
+The `MText` component provides consistent text styling:
+
+```tsx
+<MText size="lg" weight="bold" color="muted">
+  Wallet Balance
+</MText>
+```
+
+## Common Props Pattern
+
+Most components extend React Native's base component props:
+
+```typescript
+type ComponentProps = {
+  // Custom props
+  customProp: string
+} & React.ComponentPropsWithoutRef<typeof TouchableHighlight>
+```
+
+This pattern allows components to accept all standard React Native props in addition to custom ones.
+
+## Component Naming Convention
+
+All Medusa Wallet components are prefixed with `M`:
+
+- `MWalletCard` - Wallet display card
+- `MButton` - Primary button component
+- `MQRCode` - QR code generator
+- `MTransactionCard` - Transaction list item
+
+## Responsive Design
+
+Components are designed to work across different screen sizes and orientations. Most components use:
+
+- Relative sizing with `flex` properties
+- Fixed dimensions where necessary (e.g., QR codes)
+- Responsive padding from `@/styles/layout`
+
+## Accessibility
+
+Components include accessibility features:
+
+- Touch target sizes of at least 32x32
+- Semantic component structure
+- Support for screen readers through React Native accessibility props
+
+## Getting Started
+
+Explore the component categories to see detailed documentation, props, and usage examples:
+
+- [Wallet Components](/components/wallet-components)
+- [Payment Components](/components/payment-components)

@@ -1,0 +1,405 @@
+---
+title: LNbits Integration
+description: Deep dive into how Medusa Wallet integrates with the LNbits backend for Lightning Network operations
+---
+
+## Overview
+
+Medusa Wallet uses [LNbits](https://lnbits.com) as its Lightning Network backend, providing a robust API layer for wallet management, payments, and Lightning-specific features. The integration is primarily handled through the `lnbits.ts` API module.
+
+## API Configuration
+
+The wallet connects to the LNbits instance at `wallet.medusa.bz`:
+
+```typescript
+export const BASE_URL = 'https://wallet.medusa.bz'
+
+function getCurrentBaseUrl() {
+  return useSettingsStore.getState().lnbitsUrl
+}
+```
+
+All requests use standard JSON headers and authentication via API keys or access tokens.
+
+## Authentication Flow
+
+<Accordion title="User Registration">
+
+The registration process creates a new LNbits user account and automatically provisions a default wallet:
+
+```typescript
+async function register(username: string, email: string, password: string) {
+  const response = await fetch(`${getCurrentBaseUrl()}/api/v1/auth/register`, {
+    headers,
+    method: 'POST',
+    body: JSON.stringify({
+      username,
+      email,
+      password,
+      password_repeat: password
+    })
+  })
+}
+```
+
+**Post-Registration Steps:**
+1. Parse and validate authentication response with Zod schema
+2. Fetch user data to retrieve default wallet
+3. Automatically create a paylink for receiving payments
+4. Return access token for session management
+
+See `~/workspace/source/api/lnbits.ts:47-92`
+
+</Accordion>
+
+<Accordion title="User Login">
+
+Login uses standard credential authentication:
+
+```typescript
+async function login(username: string, password: string) {
+  const response = await fetch(`${getCurrentBaseUrl()}/api/v1/auth`, {
+    headers,
+    method: 'POST',
+    body: JSON.stringify({ username, password })
+  })
+  
+  const json = await response.json()
+  const { data: authData } = AuthSchema.safeParse(json)
+  
+  return authData.access_token
+}
+```
+
+The access token is stored in the auth store and used for subsequent requests via cookie header.
+
+See `~/workspace/source/api/lnbits.ts:94-120`
+
+</Accordion>
+
+## Wallet Operations
+
+<Accordion title="Fetching User Data">
+
+User data includes all wallets and their balances:
+
+```typescript
+async function getUser(accessToken: string) {
+  const response = await fetch(`${getCurrentBaseUrl()}/api/v1/auth`, {
+    headers: { 
+      ...headers, 
+      Cookie: `cookie_access_token=${accessToken}` 
+    },
+    method: 'GET'
+  })
+  
+  const parsedWallets = data.wallets.map(parse.fromLnbitsWalletToWallet)
+  
+  return {
+    username: data.username,
+    email: data.email,
+    wallets: parsedWallets,
+    totalBalance: parsedWallets.reduce(
+      (total, wallet) => total + wallet.balance,
+      0
+    )
+  }
+}
+```
+
+See `~/workspace/source/api/lnbits.ts:179-211`
+
+</Accordion>
+
+<Accordion title="Creating Wallets">
+
+New wallets can be created using an admin key:
+
+```typescript
+async function createWallet(name: string, adminkey: string) {
+  const response = await fetch(`${getCurrentBaseUrl()}/api/v1/wallet`, {
+    headers: {
+      ...headers,
+      'x-api-key': adminkey
+    },
+    method: 'POST',
+    body: JSON.stringify({ name })
+  })
+  
+  const data = WalletSchema.parse(json)
+  return parse.fromLnbitsWalletToWallet(data)
+}
+```
+
+Each wallet has three keys:
+- **Admin key**: Full access (create, pay, manage)
+- **Invoice key**: Can create invoices and view payments
+- **Read key**: View-only access
+
+See `~/workspace/source/api/lnbits.ts:447-465`
+
+</Accordion>
+
+## Payment Operations
+
+<Accordion title="Creating Invoices">
+
+Invoices are created using the invoice key (inkey):
+
+```typescript
+async function createInvoice(amount: number, inkey: string, memo?: string) {
+  const response = await fetch(`${getCurrentBaseUrl()}/api/v1/payments`, {
+    headers: { ...headers, 'x-api-key': inkey },
+    method: 'POST',
+    body: JSON.stringify({ 
+      out: false, 
+      unit: 'sat', 
+      amount, 
+      memo 
+    })
+  })
+  
+  return InvoiceSchema.parse(json)
+}
+```
+
+See `~/workspace/source/api/lnbits.ts:495-510`
+
+</Accordion>
+
+<Accordion title="Paying Invoices">
+
+The wallet supports two payment types:
+
+**1. Bolt11 Invoices:**
+```typescript
+async function payInvoice(invoice: string, adminkey: string) {
+  const response = await fetch(`${getCurrentBaseUrl()}/api/v1/payments`, {
+    headers: { ...headers, 'x-api-key': adminkey },
+    method: 'POST',
+    body: JSON.stringify({ out: true, bolt11: invoice })
+  })
+}
+```
+
+**2. LNURL Payments:**
+```typescript
+async function payLnurl(payload: PayLnurl, adminkey: string) {
+  const response = await fetch(`${getCurrentBaseUrl()}/api/v1/payments/lnurl`, {
+    headers: { ...headers, 'x-api-key': adminkey },
+    method: 'POST',
+    body: JSON.stringify({
+      description_hash: payload.descriptionHash,
+      description: payload.description,
+      callback: payload.callback,
+      amount: payload.amount * 1_000, // Convert to millisats
+      unit: 'sat',
+      ...(payload.comment ? { comment: payload.comment } : {})
+    })
+  })
+}
+```
+
+See `~/workspace/source/api/lnbits.ts:528-595`
+
+</Accordion>
+
+<Accordion title="Fetching Payment History">
+
+Payment history includes historical fiat conversion data:
+
+```typescript
+async function getPaginatedPayments(
+  inkey: string,
+  { limit = PAYMENTS_PER_FETCH, offset = 0, walletId }: Options,
+  snapshots: Record<string, FiatSnapshot>,
+  addSnapshot: (timestamp: string, snapshot: FiatSnapshot) => void
+) {
+  const url = new URL(`${getCurrentBaseUrl()}/api/v1/payments`)
+  url.searchParams.append('status', 'success')
+  url.searchParams.append('direction', 'desc')
+  url.searchParams.append('limit', String(limit))
+  url.searchParams.append('offset', String(offset))
+  if (walletId) url.searchParams.append('wallet_id', walletId)
+  
+  // Fetch payments and add historical fiat prices
+  const historicalPricesMap = getHistoricalPricesMap(
+    data.map((payment) => ({
+      id: payment.payment_hash,
+      timestamp: new Date(payment.time).getTime()
+    }))
+  )
+  
+  // Fetch or retrieve cached price snapshots
+  for (const [timestamp, ids] of Object.entries(historicalPricesMap)) {
+    let fiatSnapshot: FiatSnapshot
+    
+    if (snapshots[timestamp]) {
+      fiatSnapshot = snapshots[timestamp]
+    } else {
+      fiatSnapshot = await medusa.getBitcoinPricesAt(Number(timestamp))
+    }
+    
+    for (const id of ids) {
+      fiatSnapshotForIds[id] = fiatSnapshot
+      addSnapshot(timestamp, fiatSnapshot)
+    }
+  }
+}
+```
+
+See `~/workspace/source/api/lnbits.ts:318-398`
+
+</Accordion>
+
+## WebSocket Integration
+
+<Accordion title="Payment Status Monitoring">
+
+Real-time payment monitoring via WebSocket:
+
+```typescript
+function subscribePaymentWs(
+  paymentHash: Payment['payment_hash'],
+  callback: () => void
+) {
+  const url = new URL(`${getCurrentBaseUrl()}/api/v1`)
+  url.protocol = 'wss'
+  url.pathname = `/api/v1/ws/${paymentHash}`
+  
+  const webSocket = new WebSocket(url.toString())
+  webSocket.addEventListener('message', async ({ data }) => {
+    const parsedData = WebsocketSchema.parse(JSON.parse(data))
+    
+    if (!parsedData.pending || parsedData.paid) {
+      callback()
+      webSocket.close()
+    }
+  })
+  
+  return webSocket
+}
+```
+
+See `~/workspace/source/api/lnbits.ts:402-423`
+
+</Accordion>
+
+<Accordion title="Wallet Updates Monitoring">
+
+Monitor incoming payments for a wallet:
+
+```typescript
+function subscribeInkeyWs(inkey: string, callback: (amount: number) => void) {
+  const url = new URL(`${getCurrentBaseUrl()}/api/v1`)
+  url.protocol = 'wss'
+  url.pathname = `/api/v1/ws/${inkey}`
+  
+  const webSocket = new WebSocket(url.toString())
+  webSocket.addEventListener('message', async ({ data }) => {
+    const parsedData = InkeyWebsocketSchema.parse(JSON.parse(data))
+    
+    if (
+      parsedData.payment?.status === 'success' &&
+      parsedData.payment?.amount
+    ) {
+      callback(parsedData.payment.amount / 1000) // Convert to sats
+    }
+  })
+  
+  return webSocket
+}
+```
+
+See `~/workspace/source/api/lnbits.ts:425-445`
+
+</Accordion>
+
+## LNURL-Pay (Paylinks)
+
+<Accordion title="Creating Paylinks">
+
+Paylinks allow users to receive payments via LNURL-Pay:
+
+```typescript
+async function createPaylink(adminKey: string) {
+  const response = await fetch(`${getCurrentBaseUrl()}/lnurlp/api/v1/links`, {
+    headers: { ...headers, 'x-api-key': adminKey },
+    method: 'POST',
+    body: JSON.stringify({
+      description: PAYLINK_DESCRIPTION,
+      min: PAYLINK_MIN,
+      max: PAYLINK_MAX,
+      username: generateRandomAddress(),
+      comment_chars: PAYLINK_COMMENT_CHARS
+    })
+  })
+  
+  return data.lnurl
+}
+```
+
+A paylink is automatically created during registration.
+
+See `~/workspace/source/api/lnbits.ts:122-152`
+
+</Accordion>
+
+## Boltz Swaps
+
+<Accordion title="Submarine Swaps">
+
+The wallet integrates with Boltz for on-chain/Lightning swaps:
+
+```typescript
+async function createSwap(data: CreateSwapData, adminkey: string) {
+  const url = `${getCurrentBaseUrl()}/boltz/api/v1/swap${
+    data.direction === 'out' ? '/reverse' : ''
+  }`
+  
+  const body = data.direction === 'out'
+    ? JSON.stringify({
+        wallet: data.walletId,
+        amount: data.amount,
+        instant_settlement: true,
+        onchain_address: data.address,
+        feerate: false,
+        direction: data.amountOption
+      })
+    : JSON.stringify({
+        wallet: data.walletId,
+        amount: data.amount,
+        refund_address: data.address,
+        feerate: false
+      })
+}
+```
+
+**Swap Types:**
+- **Submarine Swap (in)**: On-chain → Lightning
+- **Reverse Swap (out)**: Lightning → On-chain
+- **Auto Swap**: Automated reverse swaps based on wallet balance
+
+See `~/workspace/source/api/lnbits.ts:696-746`
+
+</Accordion>
+
+## Error Handling
+
+All API calls use Zod schemas for runtime validation:
+
+```typescript
+const { data: authData, error: authError } = AuthSchema.safeParse(json)
+
+if (authError) {
+  const errorData = ValidationErrorSchema.parse(json)
+  
+  throw new Error(
+    typeof errorData.detail === 'string'
+      ? errorData.detail
+      : errorData.detail[0].msg
+  )
+}
+```
+
+This ensures type safety and provides clear error messages from the LNbits backend.

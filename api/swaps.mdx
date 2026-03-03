@@ -1,0 +1,508 @@
+---
+title: Boltz Swap API
+description: Lightning Network to on-chain Bitcoin swaps via Boltz integration
+---
+
+The Boltz Swap API enables seamless swaps between Lightning Network and on-chain Bitcoin. You can create submarine swaps (Lightning → on-chain), reverse swaps (on-chain → Lightning), and configure automatic reverse swaps.
+
+## Import
+
+```typescript
+import lnbits from '@/api/lnbits'
+```
+
+<Note>
+  All swap functions are part of the LNbits API module and require Boltz extension to be enabled on the LNbits server.
+</Note>
+
+## Configuration
+
+### getBoltzConfig
+
+Retrieve Boltz service configuration including fees and limits.
+
+```typescript
+const config = await lnbits.getBoltzConfig()
+```
+
+<ResponseField name="config" type="object">
+  Boltz configuration with service limits and fees
+  <Expandable title="properties">
+    <ResponseField name="minimal" type="number">
+      Minimum swap amount in satoshis
+    </ResponseField>
+    <ResponseField name="maximal" type="number">
+      Maximum swap amount in satoshis
+    </ResponseField>
+    <ResponseField name="fees" type="object">
+      Fee structure for swaps
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<Tabs>
+  <Tab title="Usage">
+    ```typescript
+    const config = await lnbits.getBoltzConfig()
+
+    console.log(`Swap limits:`)
+    console.log(`  Min: ${config.minimal} sats`)
+    console.log(`  Max: ${config.maximal} sats`)
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Submarine Swaps (Lightning → On-chain)
+
+Submarine swaps allow you to send Lightning funds and receive on-chain Bitcoin.
+
+### createSwap
+
+Create a submarine swap or reverse swap.
+
+```typescript
+const swap = await lnbits.createSwap(data, adminkey)
+```
+
+<ParamField path="data" type="CreateSwapData" required>
+  Swap configuration
+  <Expandable title="properties">
+    <ParamField path="walletId" type="string" required>
+      ID of the wallet to use for the swap
+    </ParamField>
+    <ParamField path="address" type="string" required>
+      Bitcoin address for receiving (reverse) or refund (submarine)
+    </ParamField>
+    <ParamField path="amount" type="number" required>
+      Amount in satoshis
+    </ParamField>
+    <ParamField path="direction" type="'in' | 'out'" required>
+      Swap direction: 'in' for submarine (Lightning → on-chain), 'out' for reverse (on-chain → Lightning)
+    </ParamField>
+    <ParamField path="amountOption" type="'send' | 'receive'" required>
+      Whether amount represents what you send or receive
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="adminkey" type="string" required>
+  Admin key of the wallet
+</ParamField>
+
+<ResponseField name="swap" type="object">
+  Created swap object with status and details
+  <Expandable title="properties">
+    <ResponseField name="id" type="string">
+      Unique swap identifier
+    </ResponseField>
+    <ResponseField name="status" type="string">
+      Current swap status
+    </ResponseField>
+    <ResponseField name="bip21" type="string">
+      BIP21 payment URI (for submarine swaps)
+    </ResponseField>
+    <ResponseField name="address" type="string">
+      Bitcoin address for payment
+    </ResponseField>
+    <ResponseField name="amount" type="number">
+      Swap amount in satoshis
+    </ResponseField>
+    <ResponseField name="time" type="string">
+      Creation timestamp
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<Tabs>
+  <Tab title="Submarine Swap">
+    ```typescript
+    // Lightning → On-chain
+    const swap = await lnbits.createSwap(
+      {
+        walletId: 'wallet_abc123',
+        address: 'bc1q...',  // Your Bitcoin address
+        amount: 100000,       // 100k sats
+        direction: 'in',
+        amountOption: 'send'
+      },
+      adminkey
+    )
+
+    console.log('Pay this invoice to complete swap:')
+    console.log(swap.bip21)
+    ```
+  </Tab>
+  <Tab title="Reverse Swap">
+    ```typescript
+    // On-chain → Lightning
+    const swap = await lnbits.createSwap(
+      {
+        walletId: 'wallet_abc123',
+        address: 'bc1q...',  // Refund address
+        amount: 100000,       // 100k sats
+        direction: 'out',
+        amountOption: 'receive'
+      },
+      adminkey
+    )
+
+    console.log('Send Bitcoin to:')
+    console.log(swap.address)
+    ```
+  </Tab>
+  <Tab title="React Hook">
+    ```typescript
+    import useCreateSwap from '@/hooks/mutation/useCreateSwap'
+
+    function SwapComponent({ adminkey }) {
+      const createSwap = useCreateSwap(adminkey)
+
+      const handleCreateSwap = () => {
+        createSwap.mutate({
+          walletId: 'wallet_abc123',
+          address: 'bc1q...',
+          amount: 100000,
+          direction: 'in',
+          amountOption: 'send'
+        })
+      }
+
+      return (
+        <button 
+          onClick={handleCreateSwap}
+          disabled={createSwap.isPending}
+        >
+          Create Swap
+        </button>
+      )
+    }
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Swap Management
+
+### listSwaps
+
+Retrieve all submarine swaps (Lightning → on-chain) for the user.
+
+```typescript
+const swaps = await lnbits.listSwaps(adminkey)
+```
+
+<ParamField path="adminkey" type="string" required>
+  Admin key with permission to view swaps across all wallets
+</ParamField>
+
+<ResponseField name="swaps" type="array">
+  Array of submarine swap objects
+</ResponseField>
+
+---
+
+### listReverseSwaps
+
+Retrieve all reverse swaps (on-chain → Lightning) for the user.
+
+```typescript
+const swaps = await lnbits.listReverseSwaps(adminkey)
+```
+
+<ParamField path="adminkey" type="string" required>
+  Admin key with permission to view swaps across all wallets
+</ParamField>
+
+<ResponseField name="swaps" type="array">
+  Array of reverse swap objects
+</ResponseField>
+
+<Tabs>
+  <Tab title="Usage">
+    ```typescript
+    const [submarine, reverse] = await Promise.all([
+      lnbits.listSwaps(adminkey),
+      lnbits.listReverseSwaps(adminkey)
+    ])
+
+    console.log(`Submarine swaps: ${submarine.length}`)
+    console.log(`Reverse swaps: ${reverse.length}`)
+    ```
+  </Tab>
+  <Tab title="React Hook">
+    ```typescript
+    import useSwaps from '@/hooks/query/useSwaps'
+
+    function SwapsComponent({ adminkey }) {
+      const { data: swaps, isLoading } = useSwaps(adminkey)
+
+      if (isLoading) return <Loading />
+
+      return (
+        <ul>
+          {swaps?.map(swap => (
+            <li key={swap.id}>
+              {swap.amount} sats - {swap.status}
+            </li>
+          ))}
+        </ul>
+      )
+    }
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Auto Swaps
+
+Automatic reverse swaps allow you to automatically convert incoming Lightning payments to on-chain Bitcoin when your wallet balance exceeds a threshold.
+
+### createAutoSwap
+
+Configure automatic reverse swaps for a wallet.
+
+```typescript
+const autoSwap = await lnbits.createAutoSwap(data, adminkey)
+```
+
+<ParamField path="data" type="CreateAutoSwapData" required>
+  Auto-swap configuration
+  <Expandable title="properties">
+    <ParamField path="walletId" type="string" required>
+      ID of the wallet to configure
+    </ParamField>
+    <ParamField path="amount" type="number" required>
+      Balance threshold in satoshis that triggers the auto-swap
+    </ParamField>
+    <ParamField path="address" type="string" required>
+      Bitcoin address to receive swapped funds
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="adminkey" type="string" required>
+  Admin key of the wallet
+</ParamField>
+
+<ResponseField name="autoSwap" type="object">
+  Created auto-swap configuration
+  <Expandable title="properties">
+    <ResponseField name="id" type="string">
+      Unique auto-swap configuration ID
+    </ResponseField>
+    <ResponseField name="balance" type="number">
+      Balance threshold in satoshis
+    </ResponseField>
+    <ResponseField name="onchain_address" type="string">
+      Destination Bitcoin address
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<Tabs>
+  <Tab title="Usage">
+    ```typescript
+    // Auto-swap when balance exceeds 500k sats
+    const autoSwap = await lnbits.createAutoSwap(
+      {
+        walletId: 'wallet_abc123',
+        amount: 500000,
+        address: 'bc1q...'
+      },
+      adminkey
+    )
+
+    console.log('Auto-swap configured')
+    console.log(`Trigger: ${autoSwap.balance} sats`)
+    console.log(`Destination: ${autoSwap.onchain_address}`)
+    ```
+  </Tab>
+  <Tab title="React Hook">
+    ```typescript
+    import useCreateAutoSwap from '@/hooks/mutation/useCreateAutoSwap'
+
+    function AutoSwapComponent({ adminkey }) {
+      const createAutoSwap = useCreateAutoSwap(adminkey)
+
+      const handleCreate = () => {
+        createAutoSwap.mutate({
+          walletId: 'wallet_abc123',
+          amount: 500000,
+          address: 'bc1q...'
+        })
+      }
+
+      return <button onClick={handleCreate}>Enable Auto-Swap</button>
+    }
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+### listAutoReverseSwaps
+
+Retrieve all configured auto-swap settings.
+
+```typescript
+const autoSwaps = await lnbits.listAutoReverseSwaps(adminkey)
+```
+
+<ParamField path="adminkey" type="string" required>
+  Admin key with permission to view auto-swaps across all wallets
+</ParamField>
+
+<ResponseField name="autoSwaps" type="array">
+  Array of auto-swap configuration objects
+</ResponseField>
+
+<Tabs>
+  <Tab title="Usage">
+    ```typescript
+    const autoSwaps = await lnbits.listAutoReverseSwaps(adminkey)
+
+    autoSwaps.forEach(config => {
+      console.log(`Wallet: ${config.wallet}`)
+      console.log(`Threshold: ${config.balance} sats`)
+      console.log(`Address: ${config.onchain_address}`)
+    })
+    ```
+  </Tab>
+  <Tab title="React Hook">
+    ```typescript
+    import useAutoSwaps from '@/hooks/query/useAutoSwaps'
+
+    function AutoSwapsComponent({ adminkey }) {
+      const { data: autoSwaps } = useAutoSwaps(adminkey)
+
+      return (
+        <ul>
+          {autoSwaps?.map(config => (
+            <li key={config.id}>
+              Threshold: {config.balance} sats
+            </li>
+          ))}
+        </ul>
+      )
+    }
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+### deleteAutoSwap
+
+Remove an auto-swap configuration.
+
+```typescript
+await lnbits.deleteAutoSwap(id, adminkey)
+```
+
+<ParamField path="id" type="string" required>
+  Auto-swap configuration ID to delete
+</ParamField>
+
+<ParamField path="adminkey" type="string" required>
+  Admin key of the wallet
+</ParamField>
+
+<Tabs>
+  <Tab title="Usage">
+    ```typescript
+    await lnbits.deleteAutoSwap('config_id_123', adminkey)
+    console.log('Auto-swap disabled')
+    ```
+  </Tab>
+  <Tab title="React Hook">
+    ```typescript
+    import useDeleteAutoSwap from '@/hooks/mutation/useDeleteAutoSwap'
+
+    function DeleteAutoSwapButton({ id, adminkey }) {
+      const deleteAutoSwap = useDeleteAutoSwap(adminkey)
+
+      return (
+        <button onClick={() => deleteAutoSwap.mutate(id)}>
+          Disable Auto-Swap
+        </button>
+      )
+    }
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Swap Types Explained
+
+### Submarine Swaps (Lightning → On-chain)
+
+1. Create a submarine swap with direction: `'in'`
+2. Pay the Lightning invoice provided in the response
+3. Receive on-chain Bitcoin at your specified address
+4. Use for: Cashing out to on-chain, cold storage, exchanges
+
+### Reverse Swaps (On-chain → Lightning)
+
+1. Create a reverse swap with direction: `'out'`
+2. Send on-chain Bitcoin to the provided address
+3. Receive Lightning funds in your wallet
+4. Use for: Topping up Lightning wallet, instant liquidity
+
+### Auto Swaps
+
+1. Configure auto-swap with a balance threshold
+2. Automatically triggered when wallet balance exceeds threshold
+3. Converts excess Lightning balance to on-chain Bitcoin
+4. Use for: Automatic treasury management, risk reduction
+
+## Best Practices
+
+### Fee Awareness
+
+```typescript
+const config = await lnbits.getBoltzConfig()
+
+// Check fees before creating swap
+const swapAmount = 100000
+if (swapAmount < config.minimal || swapAmount > config.maximal) {
+  throw new Error('Amount outside allowed range')
+}
+```
+
+### Error Handling
+
+```typescript
+try {
+  const swap = await lnbits.createSwap(data, adminkey)
+  console.log('Swap created:', swap.id)
+} catch (error) {
+  console.error('Swap failed:', error.message)
+  // Handle insufficient balance, invalid address, etc.
+}
+```
+
+### Monitoring Swaps
+
+```typescript
+// Poll swap status
+const checkSwapStatus = async () => {
+  const swaps = await lnbits.listSwaps(adminkey)
+  const pendingSwaps = swaps.filter(s => s.status === 'pending')
+  
+  console.log(`${pendingSwaps.length} swaps pending`)
+}
+
+// Check every 30 seconds
+setInterval(checkSwapStatus, 30000)
+```
+
+## Related
+
+- See `/api/lnbits` for payment and wallet management functions
+- Swap fees are paid from the swap amount automatically
+- All swaps use instant settlement for reverse swaps when enabled

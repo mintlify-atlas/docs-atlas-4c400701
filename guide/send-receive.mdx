@@ -1,0 +1,257 @@
+---
+title: Send and Receive Lightning Payments
+description: Learn how to send and receive instant Lightning Network payments with Medusa Wallet
+---
+
+## Understanding Lightning Payments
+
+Lightning Network enables instant, low-fee Bitcoin payments. Medusa Wallet makes it easy to send and receive Lightning payments with a simple, intuitive interface.
+
+## Receiving Lightning Payments
+
+### Generate a Lightning Invoice
+
+<Steps>
+  <Step title="Open Receive Screen">
+    From the home screen, tap "Receive" or select a specific wallet and choose "Receive".
+  </Step>
+
+  <Step title="Choose Amount (Optional)">
+    Tap on the amount field to specify how much you want to receive.
+
+    <Note>
+      If you don't specify an amount and are using your default wallet, your Lightning address will be shown, which allows the sender to choose any amount.
+    </Note>
+
+    - Enter the amount using the number pad
+    - Switch between sats and fiat by tapping the amount type
+    - Tap "Confirm Amount" when done
+  </Step>
+
+  <Step title="Add a Comment (Optional)">
+    Add a description or note for this payment:
+    - Tap the comment field
+    - Enter your description (e.g., "Payment for services")
+    - Tap "Save"
+
+    <Tip>
+      Comments help you remember what the payment was for when reviewing your transaction history.
+    </Tip>
+  </Step>
+
+  <Step title="Share the Invoice">
+    Once generated, you can:
+    - **Show the QR code** for the sender to scan
+    - **Copy the invoice** to share via messaging apps
+    - **Share your Lightning address** (default wallet only)
+  </Step>
+</Steps>
+
+### Invoice Types
+
+Medusa Wallet generates different types of receive codes:
+
+1. **Lightning Address** (Default wallet, no amount specified)
+   - Format: `username@wallet.medusa.bz`
+   - Sender can specify any amount
+   - Always active and reusable
+
+2. **Lightning Invoice** (Amount specified)
+   - Bolt11 invoice format
+   - Fixed amount
+   - Expires after a set time (shown with countdown timer)
+   - One-time use
+
+<Warning>
+  Lightning invoices expire! Make sure the sender pays within the time limit shown by the timer on the screen.
+</Warning>
+
+### Monitoring Incoming Payments
+
+When someone pays your invoice:
+- You'll receive a notification showing the amount received
+- Your wallet balance updates automatically
+- The payment appears in your transaction history
+
+## Sending Lightning Payments
+
+### Pay a Lightning Invoice
+
+<Steps>
+  <Step title="Access Send Screen">
+    Scan a QR code or paste a Lightning invoice/address to open the send screen.
+
+    <Note>
+      Medusa Wallet supports:
+      - Bolt11 Lightning invoices (starting with "lnbc")
+      - Lightning addresses (format: user@domain.com)
+      - LNURL pay codes
+    </Note>
+  </Step>
+
+  <Step title="Review Payment Details">
+    The app will decode the payment request and show:
+    - **Amount**: How much will be sent (in sats and fiat)
+    - **Recipient**: Who you're sending to
+    - **Description**: What the payment is for
+    - **Wallet Balance**: Your current balance
+
+    <Warning>
+      Always verify the amount and recipient before confirming! Lightning payments are instant and cannot be reversed.
+    </Warning>
+  </Step>
+
+  <Step title="Adjust Amount (LNURL/Lightning Address only)">
+    For Lightning addresses and LNURL pay codes, you can specify the amount:
+    - Tap on the amount to edit
+    - Enter your desired amount
+    - Confirm the amount
+
+    <Note>
+      Bolt11 invoices have fixed amounts that cannot be changed.
+    </Note>
+  </Step>
+
+  <Step title="Add Comment (Optional)">
+    For Lightning addresses that support comments:
+    - Tap the comment field
+    - Enter your message (limited to allowed characters)
+    - This message will be visible to the recipient
+  </Step>
+
+  <Step title="Confirm and Send">
+    Review all details and tap "Send" to complete the payment.
+
+    The payment is processed instantly. You'll see a confirmation when successful.
+  </Step>
+</Steps>
+
+### Payment Validation
+
+Before sending, Medusa Wallet checks:
+
+- **Sufficient Balance**: Ensures you have enough sats in the selected wallet
+- **Valid Invoice**: Confirms the invoice or address is properly formatted
+- **Amount Requirements**: For LNURL, verifies the amount is within allowed limits
+
+<Warning>
+  If your balance is insufficient, you'll see an error. You can either:
+  - Select a different wallet with sufficient funds
+  - Reduce the payment amount (if allowed)
+  - Receive more funds first
+</Warning>
+
+## Transaction History
+
+View all your payment history:
+
+### Accessing History
+- Tap on any wallet to see its transaction history
+- Transactions show:
+  - Amount (with +/- indicator)
+  - Date and time
+  - Description/memo
+  - Fiat value at time of payment
+
+### Transaction Details
+
+Tap any transaction to view:
+- Payment hash
+- Full description
+- Exact timestamp
+- Historical fiat conversion
+- Payment direction (sent/received)
+
+## Payment Scenarios
+
+### Paying at a Store
+
+<Steps>
+  <Step title="Merchant shows QR code">
+    The merchant displays a Lightning invoice QR code.
+  </Step>
+
+  <Step title="Scan with Medusa Wallet">
+    Use your device's camera to scan the code.
+  </Step>
+
+  <Step title="Review and Pay">
+    Check the amount and tap "Send". Payment is instant!
+  </Step>
+</Steps>
+
+### Receiving from a Friend
+
+<Steps>
+  <Step title="Share Your Lightning Address">
+    Give your Lightning address: `yourusername@wallet.medusa.bz`
+  </Step>
+
+  <Step title="They Send Payment">
+    Your friend enters the amount and sends.
+  </Step>
+
+  <Step title="Receive Instantly">
+    Funds appear in your default wallet immediately.
+  </Step>
+</Steps>
+
+### Requesting Specific Amount
+
+<Steps>
+  <Step title="Create Invoice">
+    Open receive screen and specify the exact amount.
+  </Step>
+
+  <Step title="Share Invoice">
+    Share the QR code or invoice string.
+  </Step>
+
+  <Step title="Wait for Payment">
+    Monitor with the countdown timer. Payment is instant when sent.
+  </Step>
+</Steps>
+
+## Best Practices
+
+<Tip>
+  **Sending Tips**:
+  - Always double-check the recipient and amount
+  - For large amounts, consider sending a small test payment first
+  - Save recurring recipients in your contacts
+  - Keep descriptions clear for your records
+</Tip>
+
+<Tip>
+  **Receiving Tips**:
+  - Use your Lightning address for flexible amounts
+  - Create invoices with specific amounts for exact payments
+  - Add descriptions to help remember what each payment was for
+  - Check invoice expiration times when sharing
+</Tip>
+
+## Troubleshooting
+
+### Payment Failed
+
+If a payment fails:
+- **Insufficient Funds**: Add more sats to your wallet
+- **Invoice Expired**: Request a new invoice
+- **Invalid Format**: Ensure you copied the complete invoice
+- **Network Issues**: Check your internet connection
+
+### Invoice Not Receiving
+
+- **Invoice Expired**: Generate a new invoice
+- **Wrong Wallet**: Verify you're checking the correct wallet
+- **Network Issues**: Ensure sender has stable connection
+
+### Can't Edit Amount
+
+- **Bolt11 Invoice**: These have fixed amounts set by the recipient
+- **Lightning Address**: Amount should be editable - ensure you're using a valid Lightning address
+
+## Next Steps
+
+- [Learn about Lightning addresses](/guide/lightning-address) for easier receiving
+- [Swap Bitcoin on-chain to Lightning](/guide/swap-bitcoin) to add funds
