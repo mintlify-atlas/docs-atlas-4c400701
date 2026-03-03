@@ -1,0 +1,390 @@
+---
+title: 'Utility APIs'
+description: 'Additional API integrations for Lightning address resolution, blockchain data, and release management'
+---
+
+## Overview
+
+Medusa Wallet includes several utility API modules that provide additional functionality beyond core payment operations. These include Lightning address resolution, blockchain data from Mempool.space, and GitHub release checking.
+
+## Lightning Address API
+
+The Lightning Address API resolves Lightning addresses (e.g., `user@domain.com`) to LNURL endpoints.
+
+### wellKnown()
+
+Fetches the LNURL endpoint and payment information for a Lightning address.
+
+<ParamField path="lnaddress" type="string" required>
+  The Lightning address to resolve (e.g., "user@wallet.medusa.bz")
+</ParamField>
+
+<ParamField path="needsParse" type="boolean" default={true}>
+  Whether the address needs to be parsed (set to false if already formatted as URL)
+</ParamField>
+
+**Returns**: `WellKnown | false`
+
+<Expandable title="WellKnown object">
+  <ResponseField name="callback" type="string">
+    LNURL callback URL for requesting invoices
+  </ResponseField>
+  <ResponseField name="minSendable" type="number">
+    Minimum sendable amount in millisatoshis
+  </ResponseField>
+  <ResponseField name="maxSendable" type="number">
+    Maximum sendable amount in millisatoshis
+  </ResponseField>
+  <ResponseField name="commentAllowed" type="number">
+    Maximum length of comment allowed (0 if comments not supported)
+  </ResponseField>
+  <ResponseField name="metadata" type="string">
+    JSON-encoded metadata about the recipient
+  </ResponseField>
+</Expandable>
+
+<Tabs>
+  <Tab title="Usage">
+    ```typescript
+    import lnaddress from '@/api/lnaddress'
+
+    // Resolve a Lightning address
+    const wellKnown = await lnaddress.wellKnown('user@wallet.medusa.bz')
+
+    if (wellKnown) {
+      console.log('Callback URL:', wellKnown.callback)
+      console.log('Min sendable:', wellKnown.minSendable / 1000, 'sats')
+      console.log('Max sendable:', wellKnown.maxSendable / 1000, 'sats')
+      console.log('Comments allowed:', wellKnown.commentAllowed, 'chars')
+    } else {
+      console.log('Invalid or unreachable Lightning address')
+    }
+    ```
+  </Tab>
+  <Tab title="Implementation">
+    ```typescript
+    // From api/lnaddress.ts
+    async function wellKnown(lnaddress: string, needsParse: boolean = true) {
+      let url: string = lnaddress
+
+      if (needsParse) {
+        const parsedLNAddress = parse.lnaddress(lnaddress)
+        if (!parsedLNAddress) return false
+
+        url = `https://${parsedLNAddress.domain}/.well-known/lnurlp/${parsedLNAddress.username}`
+      }
+
+      try {
+        const response = await fetch(url, {
+          headers: { 'Content-Type': 'application/json' },
+          method: 'GET'
+        })
+        const json = await response.json()
+        const { data, error } = WellKnownSchema.safeParse(json)
+
+        if (error || !data.callback || !data.minSendable || !data.maxSendable) {
+          throw new Error()
+        }
+
+        return {
+          callback: data.callback,
+          minSendable: data.minSendable,
+          maxSendable: data.maxSendable,
+          commentAllowed: data.commentAllowed,
+          metadata: data.metadata
+        }
+      } catch {
+        return false
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+  This API follows the LNURL-pay specification (LUD-06) for Lightning address resolution.
+</Note>
+
+## Mempool API
+
+Integration with Mempool.space API for Bitcoin blockchain data.
+
+### getCurrentBlockHeight()
+
+Fetches the current Bitcoin blockchain tip height.
+
+**Returns**: `Promise<number>` - The current block height
+
+<Tabs>
+  <Tab title="Usage">
+    ```typescript
+    import mempool from '@/api/mempool'
+
+    // Get current block height
+    const height = await mempool.getCurrentBlockHeight()
+    console.log('Current block height:', height)
+    ```
+  </Tab>
+  <Tab title="Hook Usage">
+    ```typescript
+    import { useQuery } from '@tanstack/react-query'
+    import mempool from '@/api/mempool'
+
+    function BlockHeightDisplay() {
+      const { data: blockHeight, isLoading } = useQuery({
+        queryKey: ['blockHeight'],
+        queryFn: () => mempool.getCurrentBlockHeight(),
+        refetchInterval: 600000 // Refetch every 10 minutes
+      })
+
+      return (
+        <div>
+          Current Block: {isLoading ? '...' : blockHeight}
+        </div>
+      )
+    }
+    ```
+  </Tab>
+  <Tab title="Implementation">
+    ```typescript
+    // From api/mempool.ts
+    const MEMPOOL_URL = 'https://mempool.space'
+    const API_URL = `${MEMPOOL_URL}/api`
+
+    async function getCurrentBlockHeight() {
+      const response = await fetch(`${API_URL}/blocks/tip/height`)
+      const json = await response.json()
+      const height = z.number().parse(json)
+      return height
+    }
+    ```
+  </Tab>
+</Tabs>
+
+<Info>
+  The Mempool.space API is used for on-chain Bitcoin data. Block height is useful for swap operations and blockchain confirmations.
+</Info>
+
+## GitHub API
+
+Integration with GitHub API for release management and version checking.
+
+### getMedusaLatestRelease()
+
+Fetches the latest release version tag from the Medusa Wallet GitHub repository.
+
+**Returns**: `Promise<string>` - The latest release tag (e.g., "v0.3.0")
+
+<Tabs>
+  <Tab title="Usage">
+    ```typescript
+    import github from '@/api/github'
+
+    // Check for latest version
+    try {
+      const latestVersion = await github.getMedusaLatestRelease()
+      console.log('Latest version:', latestVersion)
+      
+      // Compare with current version
+      const currentVersion = 'v0.3.0' // From app version
+      if (latestVersion !== currentVersion) {
+        console.log('New version available!')
+      }
+    } catch (error) {
+      console.error('Failed to fetch latest release')
+    }
+    ```
+  </Tab>
+  <Tab title="Hook Usage">
+    ```typescript
+    import { useQuery } from '@tanstack/react-query'
+    import github from '@/api/github'
+
+    function useLatestVersion() {
+      return useQuery({
+        queryKey: ['latestVersion'],
+        queryFn: () => github.getMedusaLatestRelease(),
+        staleTime: 3600000, // Consider stale after 1 hour
+        retry: 1
+      })
+    }
+
+    function VersionChecker() {
+      const { data: latestVersion } = useLatestVersion()
+      const currentVersion = Constants.expoConfig?.version
+      
+      const hasUpdate = latestVersion && 
+        latestVersion !== `v${currentVersion}`
+      
+      return hasUpdate ? (
+        <UpdateNotification version={latestVersion} />
+      ) : null
+    }
+    ```
+  </Tab>
+  <Tab title="Implementation">
+    ```typescript
+    // From api/github.ts
+    async function getMedusaLatestRelease() {
+      const response = await fetch(
+        'https://api.github.com/repos/Psycarlo/medusa-wallet/releases/latest',
+        {
+          headers: {
+            Accept: 'application/vnd.github+json'
+          }
+        }
+      )
+
+      const json = await response.json()
+
+      if (response.ok) {
+        if (!json.tag_name) {
+          throw new Error('Latest release not found')
+        }
+        return json.tag_name as string
+      } else {
+        throw new Error('Latest release not found')
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+<Warning>
+  The GitHub API has rate limits for unauthenticated requests (60 requests per hour). Consider caching the result and implementing appropriate retry logic.
+</Warning>
+
+## Maxfy API
+
+Integration with Maxfy for Bitcoin purchase functionality.
+
+### getVouchers()
+
+Fetches available active Bitcoin purchase vouchers.
+
+**Returns**: `Promise<Voucher[]>` - Array of active vouchers
+
+<ResponseField name="Voucher" type="object">
+  <Expandable title="properties">
+    <ResponseField name="id" type="number">
+      Unique voucher identifier
+    </ResponseField>
+    <ResponseField name="fee" type="number">
+      Processing fee for this voucher
+    </ResponseField>
+    <ResponseField name="active" type="boolean">
+      Whether this voucher is currently available
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### createTransaction()
+
+Creates a Bitcoin purchase transaction.
+
+<ParamField path="lnaddress" type="string" required>
+  Lightning address to receive the Bitcoin
+</ParamField>
+
+<ParamField path="email" type="string" required>
+  Email address for purchase receipt
+</ParamField>
+
+<ParamField path="voucherId" type="number" required>
+  ID of the selected voucher
+</ParamField>
+
+**Returns**: `Promise<CheckoutData>`
+
+<ResponseField name="CheckoutData" type="object">
+  <Expandable title="properties">
+    <ResponseField name="checkout_url" type="string">
+      Stripe checkout URL for completing payment
+    </ResponseField>
+    <ResponseField name="txid" type="string">
+      Transaction identifier
+    </ResponseField>
+    <ResponseField name="stripe_price" type="string">
+      Price ID for Stripe payment
+    </ResponseField>
+    <ResponseField name="customer_email" type="string">
+      Email address used for the transaction
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<Tabs>
+  <Tab title="Usage">
+    ```typescript
+    import maxfy from '@/api/maxfy'
+
+    // Fetch available vouchers
+    const vouchers = await maxfy.getVouchers()
+    console.log('Available vouchers:', vouchers)
+
+    // Create purchase transaction
+    const transaction = await maxfy.createTransaction(
+      'user@wallet.medusa.bz',
+      'user@example.com',
+      vouchers[0].id
+    )
+
+    // Open checkout URL
+    window.open(transaction.checkout_url)
+    ```
+  </Tab>
+  <Tab title="Implementation">
+    ```typescript
+    // From api/maxfy.ts
+    const BASE_URL = 'https://api.maxfy.app'
+    const API_URL = `${BASE_URL}/v1`
+
+    async function getVouchers() {
+      const response = await fetch(`${API_URL}/vouchersGet`, {
+        headers,
+        method: 'GET'
+      })
+      const json = await response.json()
+      const data = VouchersSchema.parse(json)
+      return data.vouchers.filter((voucher) => voucher.active)
+    }
+
+    async function createTransaction(
+      lnaddress: string,
+      email: string,
+      voucherId: number
+    ) {
+      const response = await fetch(
+        `${API_URL}/transactionAdd?lnaddress=${lnaddress}&email=${email}&voucher_id=${voucherId}`,
+        {
+          headers,
+          method: 'POST'
+        }
+      )
+      const json = await response.json()
+      return CheckoutSchema.parse(json)
+    }
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+  The Maxfy API is authenticated using basic auth credentials. The credentials are embedded in the source code for the Medusa-specific integration.
+</Note>
+
+## Related Documentation
+
+<CardGroup cols={2}>
+  <Card title="Buy Bitcoin Feature" icon="credit-card" href="/features/buy-bitcoin">
+    Learn how to buy Bitcoin in the app
+  </Card>
+  <Card title="Lightning Address" icon="at" href="/guide/lightning-address">
+    Understanding Lightning addresses
+  </Card>
+  <Card title="LNbits API" icon="bolt" href="/api/lnbits">
+    Core Lightning wallet operations
+  </Card>
+  <Card title="Swap API" icon="arrow-right-arrow-left" href="/api/swaps">
+    Bitcoin swap operations
+  </Card>
+</CardGroup>

@@ -36,6 +36,7 @@
             "pages": [
               "features/wallets",
               "features/payments",
+              "features/buy-bitcoin",
               "features/swaps",
               "features/security"
             ]
@@ -77,7 +78,8 @@
               "api/overview",
               "api/lnbits",
               "api/medusa",
-              "api/swaps"
+              "api/swaps",
+              "api/utilities"
             ]
           },
           {

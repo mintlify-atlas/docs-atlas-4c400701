@@ -1,0 +1,192 @@
+---
+title: 'Buy Bitcoin'
+description: 'Purchase Bitcoin directly within Medusa Wallet using vouchers and receive it instantly to your Lightning wallet'
+---
+
+## Overview
+
+Medusa Wallet integrates with Maxfy to enable seamless Bitcoin purchases directly within the app. You can buy Bitcoin using vouchers at competitive rates and receive the funds instantly in your Lightning wallet.
+
+<Info>
+  Bitcoin purchases are processed through Maxfy's payment infrastructure and delivered directly to your Lightning address.
+</Info>
+
+## How It Works
+
+The buy flow is designed to be simple and secure:
+
+<Steps>
+  <Step title="Select a voucher amount">
+    Choose from available voucher denominations that fit your purchase needs
+  </Step>
+  <Step title="Verify your email">
+    Use your account email or provide an alternative email for the purchase receipt
+  </Step>
+  <Step title="Complete checkout">
+    Complete the payment through Stripe's secure checkout interface
+  </Step>
+  <Step title="Receive Bitcoin">
+    Bitcoin is delivered instantly to your Lightning address upon payment confirmation
+  </Step>
+</Steps>
+
+## Available Vouchers
+
+The app displays active vouchers with the following information:
+
+- **Amount**: The Bitcoin value of the voucher
+- **Fee**: Processing fee charged by the payment provider
+- **Total Price**: Amount + fee displayed in your selected fiat currency
+
+Vouchers are fetched in real-time from Maxfy's API and only active vouchers are displayed.
+
+## Current Bitcoin Price
+
+Before making a purchase, you can see the current Bitcoin price in your preferred fiat currency. The price is fetched from the Medusa pricing API and updated in real-time.
+
+```typescript
+// Example: Fetching current BTC price
+const { data: btcPrice } = useQuery({
+  queryKey: ['bitcoinPrice'],
+  queryFn: () => medusa.getBitcoinPricesAt(Date.now())
+})
+
+// Display price in your fiat currency
+const displayPrice = `${fiatUtils.getSymbol(fiatCurrency)}${formatNumber(btcPrice[fiatCurrency], 2)}`
+```
+
+## Email Selection
+
+You can choose which email to use for the purchase receipt:
+
+<Tabs>
+  <Tab title="Account Email">
+    Use the email associated with your Medusa Wallet account (default)
+  </Tab>
+  <Tab title="Other Email">
+    Provide a different email address for this specific purchase
+  </Tab>
+</Tabs>
+
+<Note>
+  The email you provide will receive the purchase receipt and transaction details from the payment processor.
+</Note>
+
+## Payment Process
+
+### Creating a Transaction
+
+When you select a voucher and continue to checkout:
+
+```typescript
+// Transaction creation from app/(authenticated)/(tabs)/buy.tsx
+const createTransactionMutation = useMutation({
+  mutationKey: ['createTransaction'],
+  mutationFn: (addressUsername: string) =>
+    maxfy.createTransaction(
+      getPaylinkAddress(addressUsername),
+      customerEmail,
+      selectedVoucher
+    ),
+  onSuccess: async (data) => {
+    // Checkout URL and transaction details returned
+    setUri(data.checkout_url)
+    setTxid(data.txid)
+    setStripePrice(data.stripe_price)
+  }
+})
+```
+
+### Secure Checkout
+
+The payment is processed through Stripe's secure WebView interface:
+
+- Transaction ID is generated and tracked
+- Payment information is securely transmitted
+- Cookies are set for session management
+- Bitcoin is delivered upon successful payment
+
+## Integration Details
+
+### Maxfy API
+
+The buy feature integrates with the Maxfy API:
+
+**Base URL**: `https://api.maxfy.app/v1`
+
+**Available Methods**:
+- `getVouchers()` - Fetches available active vouchers
+- `createTransaction(lnaddress, email, voucherId)` - Creates a purchase transaction
+
+```typescript
+// From api/maxfy.ts
+async function getVouchers() {
+  const response = await fetch(`${API_URL}/vouchersGet`, {
+    headers,
+    method: 'GET'
+  })
+  const data = VouchersSchema.parse(await response.json())
+  return data.vouchers.filter((voucher) => voucher.active)
+}
+
+async function createTransaction(
+  lnaddress: string,
+  email: string,
+  voucherId: number
+) {
+  const response = await fetch(
+    `${API_URL}/transactionAdd?lnaddress=${lnaddress}&email=${email}&voucher_id=${voucherId}`,
+    {
+      headers,
+      method: 'POST'
+    }
+  )
+  return CheckoutSchema.parse(await response.json())
+}
+```
+
+## Requirements
+
+To use the Buy Bitcoin feature:
+
+- Active Medusa Wallet account
+- At least one wallet created
+- Lightning address configured (automatic with account creation)
+- Valid email address for receipt delivery
+
+## Troubleshooting
+
+<Accordion title="Why can't I see any vouchers?">
+  Vouchers may not be available if:
+  - The Maxfy service is temporarily unavailable
+  - Your region is not supported
+  - No active vouchers are configured
+  
+  Try refreshing the page or check back later.
+</Accordion>
+
+<Accordion title="What happens if my payment fails?">
+  If the payment fails during checkout:
+  - No Bitcoin will be delivered
+  - No charges will be made to your payment method
+  - You can retry the purchase or contact support
+</Accordion>
+
+<Accordion title="How long does delivery take?">
+  Bitcoin is typically delivered to your Lightning address within seconds of payment confirmation. The payment is processed through the Lightning Network for instant settlement.
+</Accordion>
+
+<Accordion title="Can I use a different email for the receipt?">
+  Yes, you can choose to use your account email or provide a different email address specifically for the purchase receipt. This is useful if you want receipts sent to a separate accounting or personal email.
+</Accordion>
+
+## Related Features
+
+<CardGroup cols={2}>
+  <Card title="Lightning Address" icon="at" href="/guide/lightning-address">
+    Learn more about your Lightning address
+  </Card>
+  <Card title="Wallet Management" icon="wallet" href="/features/wallets">
+    Manage multiple wallets for organizing funds
+  </Card>
+</CardGroup>
